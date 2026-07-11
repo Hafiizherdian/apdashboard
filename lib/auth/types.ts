@@ -27,7 +27,7 @@ export const PERMISSIONS = {
   view_stats:     ['root', 'admin', 'user'],
 
   // Area management
-  manage_areas:   ['root', 'admin'],
+  manage_areas:   ['root'],
   view_areas:     ['root', 'admin', 'user'],
 
   // User management

@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 
 const TABS=[
-  {id:'menu1',        label:'menu1',       shortLabel:'menu1',  Icon:NotepadTextDashed},
-  {id:'menu2',        label:'menu2',        shortLabel:'menu2',   Icon:Calendar  },
-//   {id:'quarterly',     label:'Kuartal',         shortLabel:'Kuartal',    Icon:BarChart3 },
+  {id:'Overview',        label:'Overview',       shortLabel:'Overview',  Icon:NotepadTextDashed},
+  {id:'DataAP',        label:'Data Action Plan',        shortLabel:'DataAP',   Icon:Calendar  },
+  {id:'EntryAP',     label:'Entri Action Plan',         shortLabel:'EntryAP',    Icon:BarChart3 },
 //   {id:'l4wc4w',        label:'L4W vs C1W',      shortLabel:'L4W',        Icon:Activity  },
 //   {id:'yoy',           label:'YoY Growth',      shortLabel:'YoY',        Icon:PieChart  },
 //   {id:'outlet',        label:'Outlet',          shortLabel:'Outlet',     Icon:Store     },
@@ -45,7 +45,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, theme, setT
               <img src="/logo-cgkn.png" alt="CGKN" style={{width:26,height:26,borderRadius:7,objectFit:'contain',flexShrink:0}}/>
               <div>
                 <div style={{color:t.text,fontSize:12,fontWeight:800,fontFamily:'IBM Plex Mono,monospace',lineHeight:1.1}}>CGKN</div>
-                <div style={{color:t.textMuted,fontSize:8,fontFamily:'IBM Plex Mono,monospace',letterSpacing:'0.1em',textTransform:'uppercase'}}>Dashboard</div>
+                <div style={{color:t.textMuted,fontSize:8,fontFamily:'IBM Plex Mono,monospace',letterSpacing:'0.1em',textTransform:'uppercase'}}>AP Dashboard</div>
               </div>
             </div>
             <button onClick={()=>setCollapsed(true)} style={{background:t.inputBg,border:`1px solid ${t.borderInput}`,cursor:'pointer',color:t.textMuted,borderRadius:6,width:22,height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>
