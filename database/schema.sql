@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
   objektif                      TEXT,
   mekanisme                     TEXT,
   mekanisme_detail              JSONB,
+  status                        TEXT DEFAULT 'Running',
 
   raw_json                      JSONB,           -- fallback: seluruh hasil parse mentah
   created_at                    TIMESTAMPTZ DEFAULT NOW(),
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
 );
 CREATE INDEX IF NOT EXISTS idx_action_plans_no ON action_plans (no_action_plan);
 CREATE INDEX IF NOT EXISTS idx_action_plans_perwakilan ON action_plans (perwakilan_agen);
+CREATE INDEX IF NOT EXISTS idx_action_plans_status ON action_plans (status);
 CREATE INDEX IF NOT EXISTS idx_action_plans_created_at ON action_plans (created_at DESC);
 
 

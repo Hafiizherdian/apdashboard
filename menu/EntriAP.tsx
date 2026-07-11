@@ -18,8 +18,9 @@ import {
   Wallet2,
 } from "lucide-react";
 import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/share";
-import { FilterSelect } from "@/components/Filter";
+import { ActionPlanFilterBar, DEFAULT_AP_FILTER_STATE, EMPTY_AP_FILTER_OPTIONS, ActionPlanFilterState, ActionPlanFilterOptions } from "@/components/Filter";
 import ExcelReplicaBody from "@/components/apreplica"
+
 
 // ---------- Types ----------
 
@@ -209,9 +210,8 @@ async function apiUpload(file: File) {
 // ---------- Component ----------
 
 export default function EntriAP({ theme }: { theme: Theme }) {
-  const [selectedUnit, setSelectedUnit] = useState<string>("all");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [filters, setFilters] = useState<ActionPlanFilterState>(DEFAULT_AP_FILTER_STATE);
+  const [filterOptions, setFilterOptions] = useState<ActionPlanFilterOptions>(EMPTY_AP_FILTER_OPTIONS);
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -224,14 +224,17 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     }
   };
 
-  const RegOptions = [
-    { label: "Regional A", value: "Regional-A" },
-    { label: "Regional B", value: "Regional-B" },
-  ];
-  const availableCategories = ["Kategori 1", "Kategori 2", "Kategori 3"];
-  const areas = ["Area 1", "Area 2", "Area 3", "Area 4"];
-  const brands = ["Brand A", "Brand B", "Brand C", "Brand D"];
-  const statusOptions = ["Running", "Selesai"];
+  useEffect(() => {
+  fetch("/api/action-plan/filter-options")
+    .then((res) => res.json())
+    .then((data) => setFilterOptions({
+      area: data.area ?? [],
+      kategori: data.kategori ?? [],
+      brand: data.brand ?? [],
+      status: data.status ?? [],
+    }))
+    .catch((err) => console.error("Gagal ambil opsi filter:", err));
+}, []);
 
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
@@ -423,35 +426,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
           )}
 
           {/* Filter */}
-          <div style={{ background: t.cardbg, border: `1px solid ${t.borderCard}`, borderRadius: 13, padding: isMobile ? 14 : 20 }}>
-            <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: t.textMuted, fontFamily: "IBM Plex Mono,monospace", textTransform: "uppercase", letterSpacing: ".08em", display: "block", marginBottom: isMobile ? 8 : 10 }}>
-              Filter Data
-            </span>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, auto)", gap: 8, alignItems: "center", justifyContent: isMobile ? "stretch" : "flex-start" }}>
-              <FilterSelect label="Regional" accentColor="#10b981" value={selectedUnit} onChange={e => setSelectedUnit(e.target.value)} theme={theme} fullWidth={isMobile}>
-                <option value="all" style={{ background: t.inputBg }}>Semua Regional</option>
-                {RegOptions.map((o) => <option key={o.value} value={o.value} style={{ background: t.inputBg }}>{o.label}</option>)}
-              </FilterSelect>
-              <FilterSelect label="Area" accentColor="#f59e0b" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} theme={theme} fullWidth={isMobile}>
-                <option value="all" style={{ background: t.inputBg }}>Semua Area</option>
-                {areas.map((a) => <option key={a} value={a} style={{ background: t.inputBg }}>{a}</option>)}
-              </FilterSelect>
-              <FilterSelect label="Kategori" accentColor="#8b5cf6" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} theme={theme} fullWidth={isMobile}>
-                <option value="all" style={{ background: t.inputBg }}>Semua Kategori</option>
-                {availableCategories.map((c) => <option key={c} value={c} style={{ background: t.inputBg }}>{c}</option>)}
-              </FilterSelect>
-              <FilterSelect label="Brand" accentColor="#ef4444" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} theme={theme} fullWidth={isMobile}>
-                <option value="all" style={{ background: t.inputBg }}>Semua Brand</option>
-                {brands.map((b) => <option key={b} value={b} style={{ background: t.inputBg }}>{b}</option>)}
-              </FilterSelect>
-              <div style={{ gridColumn: isMobile ? "1 / -1" : undefined }}>
-                <FilterSelect label="Status" accentColor="#3b82f6" value={selectedWeek?.toString() ?? "all"} onChange={e => setSelectedWeek(e.target.value === "all" ? null : Number(e.target.value))} theme={theme} fullWidth={isMobile}>
-                  <option value="all" style={{ background: t.inputBg }}>Semua Status</option>
-                  {statusOptions.map((w) => <option key={w} value={w} style={{ background: t.inputBg }}>{w}</option>)}
-                </FilterSelect>
-              </div>
-            </div>
-          </div>
+          <ActionPlanFilterBar value={filters} onChange={setFilters} options={filterOptions} theme={theme} isMobile={isMobile} />
 
           {/* Search */}
           <input
