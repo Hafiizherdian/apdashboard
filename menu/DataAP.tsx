@@ -3,7 +3,14 @@
 import { tk, Theme, CardBox, FONT_MONO } from "@/components/share";
 import { FileText, X, ArrowLeft } from 'lucide-react';
 import { Table, TableColumn } from "@/components/Table";
-import { ActionPlanFilterBar, DEFAULT_AP_FILTER_STATE, EMPTY_AP_FILTER_OPTIONS, ActionPlanFilterState, ActionPlanFilterOptions } from "@/components/Filter";
+import {
+  ActionPlanFilterBar,
+  DEFAULT_AP_FILTER_STATE,
+  EMPTY_AP_FILTER_OPTIONS,
+  ActionPlanFilterState,
+  ActionPlanFilterOptions,
+  filterStateToParams,
+} from "@/components/Filter";
 import { useCallback, useEffect, useState } from "react";
 import ActionPlanDetailView from "@/components/ActionPlanDetailView";
 
@@ -24,11 +31,11 @@ interface TableRow {
   posm: number;
   trial: number;
   Totbiaya: number;
-  estsales: number;
+  estimasiSales: number;
   tarsales: number;
   costratio: number | null;
   costperpack: number | null;
-  status: "Running" | "Selesai";
+  status: "Running" | "Closed";
   entri: string | null;
 }
 
@@ -50,17 +57,16 @@ function DataAP({ theme }: { theme: Theme }) {
   };
 
   useEffect(() => {
-  fetch("/api/action-plan/filter-options")
-    .then((res) => res.json())
-    .then((data) => setFilterOptions({
-      area: data.area ?? [],
-      kategori: data.kategori ?? [],
-      brand: data.brand ?? [],
-      status: data.status ?? [],
-    }))
-    .catch((err) => console.error("Gagal ambil opsi filter:", err));
-}, []);
-
+    fetch("/api/action-plan/filter-options")
+      .then((res) => res.json())
+      .then((data) => setFilterOptions({
+        area: data.area ?? [],
+        kategori: data.kategori ?? [],
+        brand: data.brand ?? [],
+        status: data.status ?? [],
+      }))
+      .catch((err) => console.error("Gagal ambil opsi filter:", err));
+  }, []);
 
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
@@ -78,7 +84,13 @@ function DataAP({ theme }: { theme: Theme }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/action-plan?view=table&page=1&pageSize=100`);
+      const qs = new URLSearchParams({
+        view: "table",
+        page: "1",
+        pageSize: "100",
+        ...filterStateToParams(filters),
+      });
+      const res = await fetch(`/api/action-plan?${qs.toString()}`);
       if (!res.ok) throw new Error("Gagal mengambil data");
       const json = await res.json();
       setData(json.items as TableRow[]);
@@ -88,7 +100,7 @@ function DataAP({ theme }: { theme: Theme }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
     fetchData();
@@ -141,7 +153,7 @@ function DataAP({ theme }: { theme: Theme }) {
     (v ?? 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
 
   const columns: TableColumn<TableRow>[] = [
-    { key: "area", label: "Area", isSticky: true, stickyLeft: 0, sortable: true },
+    { key: "area", label: "Lokasi program", isSticky: true, stickyLeft: 0, sortable: true },
     { key: "no", label: "No AP", isSticky: true, stickyLeft: 113, sortable: true },
     { key: "tipe", label: "Tipe", sortable: true },
     { key: "brand", label: "Brand", sortable: true },
@@ -165,16 +177,46 @@ function DataAP({ theme }: { theme: Theme }) {
       key: "Angbiaya", label: "Anggaran Biaya", align: "right", sortable: true,
       render: (row) => (
         <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.Angbiaya ? row.Angbiaya.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '—'}
+          {row.Angbiaya ? row.Angbiaya.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
         </span>
       ),
     },
-    { key: "jasa", label: "Total Jasa", align: "right", sortable: true },
-    { key: "posm", label: "Total POSM", align: "right", sortable: true },
-    { key: "trial", label: "Total Trial", align: "right", sortable: true },
-    { key: "Totbiaya", label: "Total Biaya", align: "right", sortable: true },
-    { key: "estsales", label: "Estimasi Sales", align: "right", sortable: true },
-    { key: "tarsales", label: "Target Sales", align: "right", sortable: true },
+    { key: "jasa", label: "Total Jasa", align: "right", sortable: true, 
+      render: (row) => (
+        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
+          {row.jasa ? row.jasa.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+        </span>
+      ),
+    },
+    { key: "posm", label: "Total POSM", align: "right", sortable: true,
+      render: (row) => (
+        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
+          {row.posm ? row.posm.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+        </span>
+      ),
+     },
+    { key: "trial", label: "Total Trial", align: "right", sortable: true,
+      render: (row) => (
+        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
+          {row.trial ? row.trial.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+        </span>
+      ),
+     },
+    { key: "Totbiaya", label: "Total Biaya", align: "right", sortable: true,
+      render: (row) => (
+        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
+          {row.Totbiaya ? row.Totbiaya.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+        </span>
+      ),
+     },
+    { key: "estimasiSales", label: "Estimasi Sales", align: "right", sortable: true },
+    { key: "tarsales", label: "Target Sales", align: "right", sortable: true,
+      render: (row) => (
+        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
+          {row.tarsales ? row.tarsales.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+        </span>
+      ),
+     },
     {
       key: "costratio", label: "Cost Ratio", align: "right", sortable: true,
       render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{row.costratio !== null ? `${(row.costratio * 100).toFixed(2)}%` : "-"}</span>,
@@ -198,6 +240,11 @@ function DataAP({ theme }: { theme: Theme }) {
     },
   ];
 
+  // Reset dari halaman 1 setiap kali filter berubah
+  const handleFilterChange = (next: ActionPlanFilterState) => {
+    setFilters(next);
+  };
+
   const sortedData = [...data].sort((a, b) => {
     if (!sortBy) return 0;
     const valA = (a as any)[sortBy];
@@ -213,7 +260,7 @@ return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
       {!detailOpen && (
         <>
-          <ActionPlanFilterBar value={filters} onChange={setFilters} options={filterOptions} theme={theme} isMobile={isMobile} />
+          <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />
 
           <CardBox theme={theme} title="Daftar Action Plan">
             {error && (

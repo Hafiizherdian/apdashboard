@@ -5,7 +5,14 @@ import { tk, Theme } from "@/components/share";
 import { KpiMini } from "@/components/KpiMini";
 import { Card } from "@/components/Card";
 import { Files, FileSearchCorner } from 'lucide-react';
-import { ActionPlanFilterBar, DEFAULT_AP_FILTER_STATE, EMPTY_AP_FILTER_OPTIONS, ActionPlanFilterState, ActionPlanFilterOptions } from "@/components/Filter";
+import {
+  ActionPlanFilterBar,
+  DEFAULT_AP_FILTER_STATE,
+  EMPTY_AP_FILTER_OPTIONS,
+  ActionPlanFilterState,
+  ActionPlanFilterOptions,
+  filterStateToParams,
+} from "@/components/Filter";
 
 const GAP = 8;
 
@@ -49,16 +56,16 @@ function Overview({ theme }: { theme: Theme }) {
   const [filterOptions, setFilterOptions] = useState<ActionPlanFilterOptions>(EMPTY_AP_FILTER_OPTIONS);
 
   useEffect(() => {
-  fetch("/api/action-plan/filter-options")
-    .then((res) => res.json())
-    .then((data) => setFilterOptions({
-      area: data.area ?? [],
-      kategori: data.kategori ?? [],
-      brand: data.brand ?? [],
-      status: data.status ?? [],
-    }))
-    .catch((err) => console.error("Gagal ambil opsi filter:", err));
-}, []);
+    fetch("/api/action-plan/filter-options")
+      .then((res) => res.json())
+      .then((data) => setFilterOptions({
+        area: data.area ?? [],
+        kategori: data.kategori ?? [],
+        brand: data.brand ?? [],
+        status: data.status ?? [],
+      }))
+      .catch((err) => console.error("Gagal ambil opsi filter:", err));
+  }, []);
 
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
@@ -76,7 +83,8 @@ function Overview({ theme }: { theme: Theme }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/action-plan/summary");
+      const qs = new URLSearchParams(filterStateToParams(filters));
+      const res = await fetch(`/api/action-plan/summary?${qs.toString()}`);
       if (!res.ok) throw new Error("Gagal mengambil ringkasan");
       const json = await res.json();
       setSummary(json.data as SummaryData);
@@ -86,7 +94,7 @@ function Overview({ theme }: { theme: Theme }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
     fetchSummary();
@@ -124,7 +132,7 @@ function Overview({ theme }: { theme: Theme }) {
           <ChartPlaceholder theme={theme} />
         </Card>
 
-        <Card theme={theme} title="Tipe AP" sub="Tipe AP" color={t.green.text} accent={t.green.text} icon={<FileSearchCorner size={12} color={t.green.text} />}>
+        <Card theme={theme} title="Tipe AP" sub="Pie chart antara running, closed" color={t.green.text} accent={t.green.text} icon={<FileSearchCorner size={12} color={t.green.text} />}>
           <PiePlaceholder theme={theme} />
           <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'IBM Plex Mono, monospace', marginTop: 12 }}>
             Distribusi tipe action plan (belum ada endpoint agregasi per jenis_program — bisa ditambah nanti kalau perlu).

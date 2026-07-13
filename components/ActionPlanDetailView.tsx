@@ -324,7 +324,7 @@ export default function ActionPlanDetailView({
             <td style={{ ...cellBase, padding: 0 }} colSpan={20}>
               <NumberedListView value={detail.Mekanisme} />
               {/* Detail sub-program dari sheet ke-2 (POSM, Trial Taste, Target Sales, dll) */}
-              <ActionPlanMekanismeDetail detail={detail.mekanismeDetail} />
+              <ActionPlanMekanismeDetail detail={detail.mekanismeDetail} formatRupiah={formatRupiah} />
             </td>
           </tr>
 

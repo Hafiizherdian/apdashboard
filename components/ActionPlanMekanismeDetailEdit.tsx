@@ -31,6 +31,16 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
+// Kata kunci header yang dianggap kolom nominal Rupiah (case-insensitive).
+// Samakan dengan daftar di ActionPlanMekanismeDetail.tsx supaya konsisten antara mode edit & view.
+const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp"];
+
+function isCurrencyColumn(header: string | undefined): boolean {
+  if (!header) return false;
+  const h = header.toLowerCase();
+  return CURRENCY_HEADER_KEYWORDS.some((k) => h.includes(k));
+}
+
 function SectionBar({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ background: C.blackBar, color: C.white, fontWeight: 700, padding: "6px 10px", fontSize: 13, letterSpacing: 0.3 }}>
@@ -53,6 +63,44 @@ function AddRowButton({ onClick, label = "+ Tambah Baris" }: { onClick: () => vo
   );
 }
 
+/** Input khusus kolom currency: prefix "Rp", tampilan diformat, input hanya menyimpan digit mentah. */
+function CurrencyCellInput({
+  value,
+  onChange,
+  formatRupiah,
+  bold,
+}: {
+  value: string | number | null;
+  onChange: (v: string) => void;
+  formatRupiah?: (v: number) => string;
+  bold?: boolean;
+}) {
+  const numeric = Number(value) || 0;
+  // formatRupiah biasanya mengembalikan "Rp 1.000.000" — buang prefix "Rp" karena sudah ditampilkan terpisah.
+  const display = formatRupiah ? formatRupiah(numeric).replace(/^Rp\s?/, "") : String(value ?? "");
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", padding: "0 8px" }}>
+      <span style={{ fontSize: 13, whiteSpace: "nowrap", marginRight: 6 }}>Rp</span>
+      <input
+        type="text"
+        value={display}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))}
+        style={{
+          flex: 1,
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          padding: "4px 0",
+          fontSize: 13,
+          textAlign: "right",
+          fontWeight: bold ? 700 : 400,
+        }}
+      />
+    </div>
+  );
+}
+
 /** Satu tabel mini editable untuk satu sub-program. */
 function EditableMiniTable({
   sub,
@@ -61,6 +109,7 @@ function EditableMiniTable({
   onChangeTotal,
   onAddRow,
   onRemoveRow,
+  formatRupiah,
 }: {
   sub: MekanismeSubProgram;
   onChangeCell: (rowIdx: number, colIdx: number, value: string) => void;
@@ -68,8 +117,10 @@ function EditableMiniTable({
   onChangeTotal: (colIdx: number, value: string) => void;
   onAddRow: () => void;
   onRemoveRow: (rowIdx: number) => void;
+  formatRupiah?: (v: number) => string;
 }) {
   const colCount = Math.max(sub.headerKolom.length, sub.totalRow?.length ?? 0, ...sub.rows.map((r) => r.length), 1);
+  const currencyCols = Array.from({ length: colCount }).map((_, i) => isCurrencyColumn(sub.headerKolom[i]));
 
   return (
     <div>
@@ -94,11 +145,19 @@ function EditableMiniTable({
             <tr key={ri}>
               {Array.from({ length: colCount }).map((_, ci) => (
                 <td key={ci} style={cellBase}>
-                  <input
-                    value={row[ci] ?? ""}
-                    onChange={(e) => onChangeCell(ri, ci, e.target.value)}
-                    style={inputStyle}
-                  />
+                  {currencyCols[ci] ? (
+                    <CurrencyCellInput
+                      value={row[ci] ?? ""}
+                      onChange={(v) => onChangeCell(ri, ci, v)}
+                      formatRupiah={formatRupiah}
+                    />
+                  ) : (
+                    <input
+                      value={row[ci] ?? ""}
+                      onChange={(e) => onChangeCell(ri, ci, e.target.value)}
+                      style={inputStyle}
+                    />
+                  )}
                 </td>
               ))}
               <td style={{ ...cellBase, width: 28, textAlign: "center" }}>
@@ -119,11 +178,20 @@ function EditableMiniTable({
             <tr>
               {Array.from({ length: colCount }).map((_, ci) => (
                 <td key={ci} style={{ ...cellBase, background: ci === 0 ? C.totalRow : C.yellow, fontWeight: 700 }}>
-                  <input
-                    value={sub.totalRow?.[ci] ?? ""}
-                    onChange={(e) => onChangeTotal(ci, e.target.value)}
-                    style={{ ...inputStyle, fontWeight: 700 }}
-                  />
+                  {currencyCols[ci] ? (
+                    <CurrencyCellInput
+                      value={sub.totalRow?.[ci] ?? ""}
+                      onChange={(v) => onChangeTotal(ci, v)}
+                      formatRupiah={formatRupiah}
+                      bold
+                    />
+                  ) : (
+                    <input
+                      value={sub.totalRow?.[ci] ?? ""}
+                      onChange={(e) => onChangeTotal(ci, e.target.value)}
+                      style={{ ...inputStyle, fontWeight: 700 }}
+                    />
+                  )}
                 </td>
               ))}
               <td style={{ ...cellBase, background: C.totalRow, width: 28 }} />
@@ -177,13 +245,18 @@ function EditableNotesList({
  * Versi EDITABLE dari detail sheet ke-2 ("MEKANISME PROGRAM").
  * Dipakai di halaman Entri (mode edit), berbeda dari ActionPlanMekanismeDetail
  * yang read-only (dipakai di halaman View/Detail).
+ *
+ * `formatRupiah` opsional: kalau diisi, kolom yang headernya mengandung kata kunci
+ * currency (lihat CURRENCY_HEADER_KEYWORDS) dirender sebagai input bergaya Rupiah.
  */
 export default function ActionPlanMekanismeDetailEdit({
   detail,
   onChange,
+  formatRupiah,
 }: {
   detail: MekanismeSheet | null | undefined;
   onChange: (next: MekanismeSheet) => void;
+  formatRupiah?: (v: number) => string;
 }) {
   if (!detail || !detail.subPrograms) {
     return (
@@ -212,6 +285,7 @@ export default function ActionPlanMekanismeDetailEdit({
 
           <EditableMiniTable
             sub={sub}
+            formatRupiah={formatRupiah}
             onChangeCell={(ri, ci, v) =>
               updateSub(si, (s) => {
                 const rows = s.rows.map((r, i) => {

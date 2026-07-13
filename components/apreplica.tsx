@@ -98,6 +98,8 @@ function EditableCell({
   type = "text",
   bg,
   bold,
+  currency = false,
+  formatRupiah
 }: {
   value: string | number;
   onChange: (v: string) => void;
@@ -105,25 +107,70 @@ function EditableCell({
   type?: "text" | "number";
   bg?: string;
   bold?: boolean;
+  currency?: boolean;
+  formatRupiah?: (value: number) => string;
 }) {
+  const displayValue = currency
+    ? formatRupiah?.(Number(value || 0)) ?? value
+    : value;
+
   return (
     <td style={{ ...cellBase, background: bg, padding: 0 }}>
-      <input
-        type={type}
-        value={value as any}
-        onChange={(e) => onChange(e.target.value)}
+  {currency ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "0 8px",
+      }}
+    >
+      <span
         style={{
-          width: "100%",
+          fontSize: 13,
+          whiteSpace: "nowrap",
+          marginRight: 6,
+        }}
+      >
+        Rp
+      </span>
+
+      <input
+        type="text"
+        value={displayValue}
+        onChange={(e) => {
+          const angka = e.target.value.replace(/[^\d]/g, "");
+          onChange(angka);
+        }}
+        style={{
+          flex: 1,
           border: "none",
           outline: "none",
           background: "transparent",
-          padding: "4px 8px",
+          padding: "4px 0",
           fontSize: 13,
-          textAlign: align,
+          textAlign: "right",
           fontWeight: bold ? 700 : 400,
         }}
       />
-    </td>
+    </div>
+  ) : (
+    <input
+      type={type}
+      value={value as any}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        width: "100%",
+        border: "none",
+        outline: "none",
+        background: "transparent",
+        padding: "4px 8px",
+        fontSize: 13,
+        textAlign: align,
+        fontWeight: bold ? 700 : 400,
+      }}
+    />
+  )}
+</td>
   );
 }
 
@@ -530,9 +577,9 @@ export default function ExcelReplicaBody({
                   {(editForm.TargetProgram ?? []).map((row: any, i: number) => (
                     <tr key={row.id ?? i}>
                       <EditableCell value={row.brand ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "brand", v)} />
-                      <EditableCell value={row.wbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "wbp", Number(v))} type="number" align="right" />
-                      <EditableCell value={row.rbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "rbp", Number(v))} type="number" align="right" />
-                      <EditableCell value={row.cbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "cbp", Number(v))} type="number" align="right" />
+                      <EditableCell value={row.wbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "wbp", Number(v))} currency formatRupiah={formatRupiah} align="right" />
+                      <EditableCell value={row.rbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "rbp", Number(v))} currency formatRupiah={formatRupiah} align="right" />
+                      <EditableCell value={row.cbp ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "cbp", Number(v))} currency formatRupiah={formatRupiah} align="right" />
                       <EditableCell value={row.estimasiSales ?? ""} onChange={(v) => handleTableChange("TargetProgram", i, "estimasiSales", Number(v))} type="number" align="right" />
                       <DeleteCell onClick={() => removeRow("TargetProgram", i)} />
                     </tr>
@@ -571,12 +618,8 @@ export default function ExcelReplicaBody({
                       <EditableCell value={row.target ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "target", v)} />
                       <EditableCell value={row.brand ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "brand", v)} />
                       <EditableCell value={row.qty ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "qty", Number(v))} type="number" align="right" />
-                      <EditableCell value={row.harga ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "harga", Number(v))} type="number" align="right" />
-                      <EditableCell
-                        value={row.TargetPenjualan ?? ""}
-                        onChange={(v) => handleTableChange("TargetEvent", i, "targetPenjualan", Number(v))}
-                        type="number"
-                        align="right"
+                      <EditableCell value={row.harga ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "harga", Number(v))} currency formatRupiah={formatRupiah} align="right" />
+                      <EditableCell value={row.TargetPenjualan ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "targetPenjualan", Number(v))} currency formatRupiah={formatRupiah} align="right"
                       />
                       <DeleteCell onClick={() => removeRow("TargetEvent", i)} />
                     </tr>
@@ -728,8 +771,8 @@ export default function ExcelReplicaBody({
               <EditableCell value={row.uraian ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "uraian", v)} />
               <EditableCell value={row.qty ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "qty", Number(v))} type="number" align="right" />
               <EditableCell value={row.satuan ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "satuan", v)} />
-              <EditableCell value={row.hargaUnit ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "hargaUnit", Number(v))} type="number" align="right" />
-              <EditableCell value={row.totalBiaya ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "totalBiaya", Number(v))} type="number" align="right" />
+              <EditableCell value={row.hargaUnit ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "hargaUnit", Number(v))} currency formatRupiah={formatRupiah} align="right" />
+              <EditableCell value={row.totalBiaya ?? ""} onChange={(v) => handleTableChange("anggaranBiaya", i, "totalBiaya", Number(v))} currency formatRupiah={formatRupiah} align="right" />
               <DeleteCell onClick={() => removeRow("anggaranBiaya", i)} />
             </tr>
           ))}
@@ -771,8 +814,8 @@ export default function ExcelReplicaBody({
               <EditableCell value={row.jasaperorg ?? ""} onChange={(v) => handleTableChange("thl", i, "jasaperorg", v)} />
               <EditableCell value={row.jumlahtng ?? ""} onChange={(v) => handleTableChange("thl", i, "jumlahtng", Number(v))} type="number" align="right" />
               <EditableCell value={row.harikerja ?? ""} onChange={(v) => handleTableChange("thl", i, "harikerja", Number(v))} type="number" align="right" />
-              <EditableCell value={row.imbalanperhari ?? ""} onChange={(v) => handleTableChange("thl", i, "imbalanperhari", Number(v))} type="number" align="right" />
-              <EditableCell value={row.estimasiTotal ?? ""} onChange={(v) => handleTableChange("thl", i, "estimasiTotal", Number(v))} type="number" align="right" />
+              <EditableCell value={row.imbalanperhari ?? ""} onChange={(v) => handleTableChange("thl", i, "imbalanperhari", Number(v))} currency formatRupiah={formatRupiah} align="right" />
+              <EditableCell value={row.estimasiTotal ?? ""} onChange={(v) => handleTableChange("thl", i, "estimasiTotal", Number(v))} currency formatRupiah={formatRupiah} align="right" />
               <DeleteCell onClick={() => removeRow("thl", i)} />
             </tr>
           ))}
@@ -812,7 +855,7 @@ export default function ExcelReplicaBody({
               <EditableCell value={row.namaBarang ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "namaBarang", v)} />
               <EditableCell value={row.satuan ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "satuan", v)} />
               <EditableCell value={row.qty ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "qty", Number(v))} type="number" align="right" />
-              <EditableCell value={row.hargaUnit ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "hargaUnit", Number(v))} type="number" align="right" />
+              <EditableCell value={row.hargaUnit ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "hargaUnit", Number(v))} currency formatRupiah={formatRupiah} align="right" />
               <EditableCell value={row.estimasiTotal ?? ""} onChange={(v) => handleTableChange("barangPromo", i, "estimasiTotal", Number(v))} type="number" align="right" />
               <DeleteCell onClick={() => removeRow("barangPromo", i)} />
             </tr>
@@ -855,8 +898,8 @@ export default function ExcelReplicaBody({
                       <td style={{ ...cellBase, textAlign: "center" }}>{i + 1}</td>
                       <EditableCell value={row.Programjln ?? ""} onChange={(v) => handleTableChange("brandjln", i, "Programjln", v)} />
                       <EditableCell value={row.qtybks ?? ""} onChange={(v) => handleTableChange("brandjln", i, "qtybks", v)} align="right" />
-                      <EditableCell value={row.hrgbks ?? ""} onChange={(v) => handleTableChange("brandjln", i, "hrgbks", v)} align="right" />
-                      <EditableCell value={row.Nominal ?? ""} onChange={(v) => handleTableChange("brandjln", i, "Nominal", Number(v))} type="number" align="right" />
+                      <EditableCell value={row.hrgbks ?? ""} onChange={(v) => handleTableChange("brandjln", i, "hrgbks", v)} currency formatRupiah={formatRupiah} align="right" />
+                      <EditableCell value={row.Nominal ?? ""} onChange={(v) => handleTableChange("brandjln", i, "Nominal", Number(v))} currency formatRupiah={formatRupiah} align="right" />
                       <DeleteCell onClick={() => removeRow("brandjln", i)} />
                     </tr>
                   ))}

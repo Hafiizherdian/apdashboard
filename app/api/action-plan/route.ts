@@ -10,10 +10,22 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
     const view = searchParams.get("view");
+
+    const area = searchParams.get("area");
+    const kategori = searchParams.get("kategori");
+    const brand = searchParams.get("brand");
+    const status = searchParams.get("status");
+    const filters = {
+      area: area && area !== "all" ? area : undefined,
+      kategori: kategori && kategori !== "all" ? kategori : undefined,
+      brand: brand && brand !== "all" ? brand : undefined,
+      status: status && status !== "all" ? status : undefined,
+    };
+
     const { items, total } =
       view === "table"
-        ? await listActionPlansTable({ search, limit: pageSize, offset: (page - 1) * pageSize })
-        : await listActionPlans({ search, limit: pageSize, offset: (page - 1) * pageSize });
+        ? await listActionPlansTable({ search, limit: pageSize, offset: (page - 1) * pageSize, filters })
+        : await listActionPlans({ search, limit: pageSize, offset: (page - 1) * pageSize, filters });
 
     return NextResponse.json({
       success: true,

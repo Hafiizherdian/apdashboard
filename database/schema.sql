@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
   objektif                      TEXT,
   mekanisme                     TEXT,
   mekanisme_detail              JSONB,
-  status                        TEXT DEFAULT 'Running',
+  status_override               TEXT,
 
   raw_json                      JSONB,           -- fallback: seluruh hasil parse mentah
   created_at                    TIMESTAMPTZ DEFAULT NOW(),
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
 );
 CREATE INDEX IF NOT EXISTS idx_action_plans_no ON action_plans (no_action_plan);
 CREATE INDEX IF NOT EXISTS idx_action_plans_perwakilan ON action_plans (perwakilan_agen);
-CREATE INDEX IF NOT EXISTS idx_action_plans_status ON action_plans (status);
+CREATE INDEX IF NOT EXISTS idx_action_plans_status_override ON action_plans (status_override);
 CREATE INDEX IF NOT EXISTS idx_action_plans_created_at ON action_plans (created_at DESC);
 
 
@@ -167,6 +167,19 @@ CREATE TABLE IF NOT EXISTS action_plan_analisa (
   sort_order            INTEGER DEFAULT 0
 );
 
+-- ---------- Riwayat Perpanjangan / Memorandum ----------
+CREATE TABLE IF NOT EXISTS action_plan_perpanjangan (
+  id                    SERIAL PRIMARY KEY,
+  action_plan_id        INTEGER NOT NULL REFERENCES action_plans(id) ON DELETE CASCADE,
+  tgl_selesai_lama      DATE,
+  tgl_selesai_baru      DATE NOT NULL,
+  no_memo               TEXT,
+  keterangan            TEXT,
+  tanggal_perpanjangan  DATE DEFAULT CURRENT_DATE,
+  created_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 
 -- ---------- Index untuk semua tabel anak ----------
 CREATE INDEX IF NOT EXISTS idx_aptp_plan   ON action_plan_target_program (action_plan_id);
@@ -179,6 +192,7 @@ CREATE INDEX IF NOT EXISTS idx_apbj_plan   ON action_plan_brand_jln (action_plan
 CREATE INDEX IF NOT EXISTS idx_aptbyd_plan ON action_plan_tbyd (action_plan_id);
 CREATE INDEX IF NOT EXISTS idx_aptrf_plan  ON action_plan_transfer (action_plan_id);
 CREATE INDEX IF NOT EXISTS idx_apan_plan   ON action_plan_analisa (action_plan_id);
+CREATE INDEX IF NOT EXISTS idx_ap_perpanjangan_plan ON action_plan_perpanjangan (action_plan_id);
 
 
 -- ---------- Trigger update updated_at otomatis ----------

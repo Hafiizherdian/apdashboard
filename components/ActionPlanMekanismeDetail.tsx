@@ -59,11 +59,36 @@ function formatCell(v: string | number | null): string {
   return String(v);
 }
 
+// Kata kunci header yang dianggap kolom nominal Rupiah (case-insensitive).
+// Sesuaikan daftar ini kalau ada nama kolom lain di sheet MEKANISME yang perlu diformat currency.
+const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp"];
+
+function isCurrencyColumn(header: string | undefined): boolean {
+  if (!header) return false;
+  const h = header.toLowerCase();
+  return CURRENCY_HEADER_KEYWORDS.some((k) => h.includes(k));
+}
+
 /** Render satu tabel mini generik: header apapun kolomnya, rows apapun isinya. */
-function GenericMiniTable({ sub }: { sub: MekanismeSubProgram }) {
+function GenericMiniTable({
+  sub,
+  formatRupiah,
+}: {
+  sub: MekanismeSubProgram;
+  formatRupiah?: (v: number) => string;
+}) {
   if (!sub.headerKolom.length && !sub.rows.length) {
     return <div style={{ padding: 8, fontSize: 13, color: "#888" }}>Tidak ada data tabel.</div>;
   }
+
+  const currencyCols = sub.headerKolom.map((h) => isCurrencyColumn(h));
+
+  const renderCell = (cell: string | number | null, ci: number) => {
+    if (formatRupiah && currencyCols[ci] && typeof cell === "number") {
+      return formatRupiah(cell);
+    }
+    return formatCell(cell);
+  };
 
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -98,7 +123,7 @@ function GenericMiniTable({ sub }: { sub: MekanismeSubProgram }) {
                   textAlign: typeof cell === "number" ? "right" : ci === 0 ? "center" : "left",
                 }}
               >
-                {formatCell(cell)}
+                {renderCell(cell, ci)}
               </td>
             ))}
           </tr>
@@ -117,7 +142,7 @@ function GenericMiniTable({ sub }: { sub: MekanismeSubProgram }) {
                   textAlign: typeof cell === "number" ? "right" : ci === 0 ? "center" : "left",
                 }}
               >
-                {formatCell(cell)}
+                {renderCell(cell, ci)}
               </td>
             ))}
           </tr>
@@ -148,8 +173,17 @@ function NotesList({ notes }: { notes: string[] }) {
  * Komponen read-only untuk menampilkan detail sheet ke-2 ("MEKANISME PROGRAM")
  * hasil parse Excel. Bentuk tabelnya generik — mengikuti apapun kolom/jumlah
  * sub-program yang terbaca dari file, tanpa asumsi struktur tetap.
+ *
+ * `formatRupiah` opsional: kalau diisi, kolom yang headernya mengandung kata kunci
+ * currency (lihat CURRENCY_HEADER_KEYWORDS) akan diformat sebagai Rupiah.
  */
-export default function ActionPlanMekanismeDetail({ detail }: { detail: MekanismeSheet | null | undefined }) {
+export default function ActionPlanMekanismeDetail({
+  detail,
+  formatRupiah,
+}: {
+  detail: MekanismeSheet | null | undefined;
+  formatRupiah?: (v: number) => string;
+}) {
   if (!detail || !detail.subPrograms?.length) {
     return (
       <div style={{ padding: 12, fontSize: 13, color: "#888" }}>
@@ -174,7 +208,7 @@ export default function ActionPlanMekanismeDetail({ detail }: { detail: Mekanism
             {sub.nomor !== null ? `${sub.nomor}. ` : ""}
             {sub.judul || "(Tanpa judul)"}
           </SectionBar>
-          <GenericMiniTable sub={sub} />
+          <GenericMiniTable sub={sub} formatRupiah={formatRupiah} />
           <NotesList notes={sub.notes} />
         </div>
       ))}

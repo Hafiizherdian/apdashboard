@@ -3,7 +3,7 @@ import { pool } from "@/lib/db"; // sesuaikan sama koneksi db kamu
 
 export async function GET() {
   try {
-    const [area, kategori, brand, status] = await Promise.all([
+    const [area, kategori, brand] = await Promise.all([
       pool.query(
         `SELECT DISTINCT perwakilan_agen AS value FROM action_plans
          WHERE perwakilan_agen IS NOT NULL AND perwakilan_agen <> '' ORDER BY 1`
@@ -16,17 +16,16 @@ export async function GET() {
         `SELECT DISTINCT brand AS value FROM action_plans
          WHERE brand IS NOT NULL AND brand <> '' ORDER BY 1`
       ),
-      pool.query(
-        `SELECT DISTINCT status AS value FROM action_plans
-         WHERE status IS NOT NULL AND status <> '' ORDER BY 1`
-      ),
     ]);
 
     return NextResponse.json({
       area: area.rows.map((r) => r.value as string),
       kategori: kategori.rows.map((r) => r.value as string),
       brand: brand.rows.map((r) => r.value as string),
-      status: status.rows.map((r) => r.value as string),
+      // Status BUKAN kolom yang di-query dari DB — selalu dihitung dari
+      // tgl_selesai vs tanggal sekarang (lihat deriveStatus() di
+      // actionPlanRepository.ts), jadi cuma dua kemungkinan tetap ini.
+      status: ["Running", "Closed"],
     });
   } catch (err) {
     console.error("Gagal ambil filter options:", err);

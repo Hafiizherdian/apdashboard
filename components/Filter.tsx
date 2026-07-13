@@ -48,6 +48,20 @@ export const EMPTY_AP_FILTER_OPTIONS: ActionPlanFilterOptions = {
   area: [], kategori: [], brand: [], status: [],
 };
 
+/**
+ * Ubah ActionPlanFilterState jadi URLSearchParams siap-pakai,
+ * cuma masukin filter yang bukan "all" (Regional sengaja diskip
+ * karena belum ada kolomnya di DB).
+ */
+export function filterStateToParams(filters: ActionPlanFilterState): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (filters.area !== 'all') params.area = filters.area;
+  if (filters.kategori !== 'all') params.kategori = filters.kategori;
+  if (filters.brand !== 'all') params.brand = filters.brand;
+  if (filters.status !== 'all') params.status = filters.status;
+  return params;
+}
+
 function ActionPlanFilterBar({
   value,
   onChange,

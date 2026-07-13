@@ -1,26 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  FileText,
-  Trash2,
-  ArrowLeft,
-  Info,
-  ClipboardList,
-  Target,
-  TrendingUp,
-  Megaphone,
-  MapPin,
-  Layers,
-  Wallet,
-  Package,
-  Tag,
-  Wallet2,
-} from "lucide-react";
+import { FileText, Trash2, ArrowLeft} from "lucide-react";
 import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/share";
-import { ActionPlanFilterBar, DEFAULT_AP_FILTER_STATE, EMPTY_AP_FILTER_OPTIONS, ActionPlanFilterState, ActionPlanFilterOptions } from "@/components/Filter";
+import {
+  ActionPlanFilterBar,
+  DEFAULT_AP_FILTER_STATE,
+  EMPTY_AP_FILTER_OPTIONS,
+  ActionPlanFilterState,
+  ActionPlanFilterOptions,
+  filterStateToParams,
+} from "@/components/Filter";
 import ExcelReplicaBody from "@/components/apreplica"
-
 
 // ---------- Types ----------
 
@@ -142,6 +133,11 @@ const formatRupiah = (n: number | null | undefined) => {
   return `Rp${n.toLocaleString("id-ID")}`;
 };
 
+const formatAngka = (n: number | null | undefined) => {
+  if (n === null || n === undefined) return "-";
+  return n.toLocaleString("id-ID");
+};
+
 const GAP = 8;
 
 const DETAIL_SECTIONS: { id: string; label: string;}[] = [
@@ -163,11 +159,17 @@ const DETAIL_SECTIONS: { id: string; label: string;}[] = [
 
 // ---------- API helpers ----------
 
-async function apiFetchList(params: { page: number; pageSize: number; search: string }) {
+async function apiFetchList(params: {
+  page: number;
+  pageSize: number;
+  search: string;
+  filters: ActionPlanFilterState;
+}) {
   const qs = new URLSearchParams({
     page: String(params.page),
     pageSize: String(params.pageSize),
     ...(params.search ? { search: params.search } : {}),
+    ...filterStateToParams(params.filters),
   });
   const res = await fetch(`/api/action-plan?${qs.toString()}`);
   if (!res.ok) throw new Error("Gagal mengambil daftar action plan");
@@ -224,17 +226,24 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     }
   };
 
+  // Reset ke halaman 1 setiap kali filter berubah, biar gak nyangkut
+  // di halaman yang jadi kosong setelah data ke-filter.
+  const handleFilterChange = (next: ActionPlanFilterState) => {
+    setPage(1);
+    setFilters(next);
+  };
+
   useEffect(() => {
-  fetch("/api/action-plan/filter-options")
-    .then((res) => res.json())
-    .then((data) => setFilterOptions({
-      area: data.area ?? [],
-      kategori: data.kategori ?? [],
-      brand: data.brand ?? [],
-      status: data.status ?? [],
-    }))
-    .catch((err) => console.error("Gagal ambil opsi filter:", err));
-}, []);
+    fetch("/api/action-plan/filter-options")
+      .then((res) => res.json())
+      .then((data) => setFilterOptions({
+        area: data.area ?? [],
+        kategori: data.kategori ?? [],
+        brand: data.brand ?? [],
+        status: data.status ?? [],
+      }))
+      .catch((err) => console.error("Gagal ambil opsi filter:", err));
+  }, []);
 
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
@@ -292,7 +301,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     setLoadingList(true);
     setListError(null);
     try {
-      const { items, total } = await apiFetchList({ page, pageSize, search });
+      const { items, total } = await apiFetchList({ page, pageSize, search, filters });
       setItems(items);
       setTotal(total);
     } catch (err) {
@@ -303,7 +312,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     } finally {
       setLoadingList(false);
     }
-  }, [page, search]);
+  }, [page, search, filters]);
 
   useEffect(() => {
     fetchList();
@@ -426,7 +435,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
           )}
 
           {/* Filter */}
-          <ActionPlanFilterBar value={filters} onChange={setFilters} options={filterOptions} theme={theme} isMobile={isMobile} />
+          <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />
 
           {/* Search */}
           <input
@@ -495,28 +504,28 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                       </td>
                       <td className="px-3 py-3 text-right font-medium">{formatRupiah(item.total_biaya)}</td>
                       <td className="px-3 py-3">
-  <div className="flex items-center justify-end gap-2">
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        openDetail(item.id);
-      }}
-      style={{ background: t.blue.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
-    >
-      <FileText size={16} style={{ marginRight: 2 }} />
-    </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetail(item.id);
+                            }}
+                            style={{ background: t.blue.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            <FileText size={16} style={{ marginRight: 2 }} />
+                          </button>
 
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        setDeleteId(item.id);
-      }}
-      style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
-    >
-      <Trash2 size={16} style={{ marginRight: 2 }} />
-    </button>
-  </div>
-</td>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(item.id);
+                            }}
+                            style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={16} style={{ marginRight: 2 }} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -571,13 +580,6 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                 <ArrowLeft size={16} />
                 Kembali
               </button>
-              {/* <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: t.blue.bg, border: `1px solid ${t.blue.border}` }}
-              >
-                <FileText size={18} color={t.blue.text} />
-                <img src="logo-cgkn.png" alt="CGKN" />
-              </div> */}
               <img src="logo-cgkn.png" alt="CGKN" width={20} height={20}/>
               <div className="min-w-0">
                 <h2 className="text-base font-semibold truncate" style={{ color: t.text }}>
@@ -607,7 +609,6 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer"
                   style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
                 >
-                  {/* <s.icon size={12} /> */}
                   {s.label}
                 </button>
               ))}
@@ -616,15 +617,15 @@ export default function EntriAP({ theme }: { theme: Theme }) {
 
           {/* Scrollable body */}
           <ExcelReplicaBody
-  loadingDetail={loadingDetail}
-  detail={detail}
-  saveError={saveError}
-  editForm={editForm}
-  setEditForm={setEditForm}
-  handleTableChange={handleTableChange}
-  formatRupiah={formatRupiah}
-  modalScrollRef={modalScrollRef}
-/>
+            loadingDetail={loadingDetail}
+            detail={detail}
+            saveError={saveError}
+            editForm={editForm}
+            setEditForm={setEditForm}
+            handleTableChange={handleTableChange}
+            formatRupiah={formatRupiah}
+            modalScrollRef={modalScrollRef}
+          />
 
           {/* Sticky footer */}
           {!loadingDetail && detail && (

@@ -14,7 +14,7 @@ export interface ActionPlanListItem {
   tgl_selesai: string | null;
   total_biaya: number | null;
   created_at: string;
-  status: "Running" | "Selesai";
+  status: "Running" | "Closed";
 }
 
 export interface ActionPlanDetail extends ActionPlanListItem {
@@ -71,11 +71,56 @@ export interface ActionPlanDetail extends ActionPlanListItem {
   }[];
 }
 
+// ---------- Filter (Area / Kategori / Brand / Status) ----------
+
+export interface ActionPlanFilters {
+  area?: string;      // -> kolom perwakilan_agen
+  kategori?: string;  // -> kolom jenis_program
+  brand?: string;     // -> kolom brand
+  status?: string;    // "Running" | "Selesai" -> dihitung dari tgl_selesai, bukan kolom asli
+}
+
+/**
+ * Bangun potongan SQL "kolom = $n AND ..." dari filter yang aktif,
+ * dan push value-nya ke array `params` yang sama dipakai query induk
+ * (supaya index placeholder $1, $2, ... tetap konsisten).
+ * tableAlias dipakai kalau query induk pakai alias tabel (mis. "ap").
+ */
+function buildFilterClause(
+  filters: ActionPlanFilters | undefined,
+  params: unknown[],
+  tableAlias = ""
+): string {
+  if (!filters) return "";
+  const prefix = tableAlias ? `${tableAlias}.` : "";
+  const clauses: string[] = [];
+
+  if (filters.area) {
+    params.push(filters.area);
+    clauses.push(`${prefix}perwakilan_agen = $${params.length}`);
+  }
+  if (filters.kategori) {
+    params.push(filters.kategori);
+    clauses.push(`${prefix}jenis_program = $${params.length}`);
+  }
+  if (filters.brand) {
+    params.push(filters.brand);
+    clauses.push(`${prefix}brand = $${params.length}`);
+  }
+  if (filters.status === "Running") {
+    clauses.push(`(${prefix}tgl_selesai IS NULL OR ${prefix}tgl_selesai >= NOW())`);
+  } else if (filters.status === "Closed") {
+    clauses.push(`${prefix}tgl_selesai < NOW()`);
+  }
+
+  return clauses.length ? clauses.join(" AND ") : "";
+}
+
 // ---------- Helpers ----------
 
-function deriveStatus(tglSelesai: string | null): "Running" | "Selesai" {
+function deriveStatus(tglSelesai: string | null): "Running" | "Closed" {
   if (!tglSelesai) return "Running";
-  return new Date(tglSelesai).getTime() < Date.now() ? "Selesai" : "Running";
+  return new Date(tglSelesai).getTime() < Date.now() ? "Closed" : "Running";
 }
 
 function toDateOrNull(v: unknown): string | null {
@@ -105,20 +150,26 @@ export async function listActionPlans(opts: {
   search?: string;
   limit: number;
   offset: number;
+  filters?: ActionPlanFilters;
 }): Promise<{ items: ActionPlanListItem[]; total: number }> {
-  const { search, limit, offset } = opts;
+  const { search, limit, offset, filters } = opts;
   const params: unknown[] = [];
-  let whereClause = "";
+  const conditions: string[] = [];
 
   if (search) {
     params.push(`%${search}%`);
-    whereClause = `
-      WHERE no_action_plan ILIKE $1
-         OR perwakilan_agen ILIKE $1
-         OR brand ILIKE $1
-         OR nama_program ILIKE $1
-    `;
+    conditions.push(`(
+      no_action_plan ILIKE $${params.length}
+      OR perwakilan_agen ILIKE $${params.length}
+      OR brand ILIKE $${params.length}
+      OR nama_program ILIKE $${params.length}
+    )`);
   }
+
+  const filterClause = buildFilterClause(filters, params);
+  if (filterClause) conditions.push(filterClause);
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const countRes = await pool.query(
     `SELECT COUNT(*)::int AS total FROM action_plans ${whereClause}`,
@@ -172,7 +223,7 @@ export interface ActionPlanTableRow {
   tarsales: number;       // total target_event.target_penjualan
   costratio: number | null;   // dari action_plan_analisa row "Total Biaya"
   costperpack: number | null; // dari action_plan_analisa row "Total Biaya"
-  status: "Running" | "Selesai";
+  status: "Running" | "Closed";
   entri: string | null;  // source_filename dipakai sbg fallback "entri by"
 }
 
@@ -180,20 +231,26 @@ export async function listActionPlansTable(opts: {
   search?: string;
   limit: number;
   offset: number;
+  filters?: ActionPlanFilters;
 }): Promise<{ items: ActionPlanTableRow[]; total: number }> {
-  const { search, limit, offset } = opts;
+  const { search, limit, offset, filters } = opts;
   const params: unknown[] = [];
-  let whereClause = "";
+  const conditions: string[] = [];
 
   if (search) {
     params.push(`%${search}%`);
-    whereClause = `
-      WHERE ap.no_action_plan ILIKE $1
-         OR ap.perwakilan_agen ILIKE $1
-         OR ap.brand ILIKE $1
-         OR ap.nama_program ILIKE $1
-    `;
+    conditions.push(`(
+      ap.no_action_plan ILIKE $${params.length}
+      OR ap.perwakilan_agen ILIKE $${params.length}
+      OR ap.brand ILIKE $${params.length}
+      OR ap.nama_program ILIKE $${params.length}
+    )`);
   }
+
+  const filterClause = buildFilterClause(filters, params, "ap");
+  if (filterClause) conditions.push(filterClause);
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const countRes = await pool.query(
     `SELECT COUNT(*)::int AS total FROM action_plans ap ${whereClause}`,
@@ -707,15 +764,27 @@ export interface ActionPlanSummary {
   totalBiaya: number;
 }
 
-export async function getActionPlanSummary(): Promise<ActionPlanSummary> {
-  const res = await pool.query(`
+export async function getActionPlanSummary(filters?: ActionPlanFilters): Promise<ActionPlanSummary> {
+  const params: unknown[] = [];
+  const conditions: string[] = [];
+
+  const filterClause = buildFilterClause(filters, params);
+  if (filterClause) conditions.push(filterClause);
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const res = await pool.query(
+    `
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE tgl_selesai < NOW())::int AS closed,
       COUNT(*) FILTER (WHERE tgl_selesai >= NOW() OR tgl_selesai IS NULL)::int AS running,
       COALESCE(SUM(total_biaya), 0)::numeric AS total_biaya
     FROM action_plans
-  `);
+    ${whereClause}
+    `,
+    params
+  );
   const r = res.rows[0];
   return {
     totalActionPlan: r.total,
