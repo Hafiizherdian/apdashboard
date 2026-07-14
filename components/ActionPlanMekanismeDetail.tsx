@@ -61,7 +61,7 @@ function formatCell(v: string | number | null): string {
 
 // Kata kunci header yang dianggap kolom nominal Rupiah (case-insensitive).
 // Sesuaikan daftar ini kalau ada nama kolom lain di sheet MEKANISME yang perlu diformat currency.
-const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp"];
+const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp", "budget", "penjualan", "biaya", "estimasi total"];
 
 function isCurrencyColumn(header: string | undefined): boolean {
   if (!header) return false;

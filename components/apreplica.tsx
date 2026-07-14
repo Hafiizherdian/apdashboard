@@ -694,7 +694,7 @@ export default function ExcelReplicaBody({
           <SectionRow no="06" label="MEKANISME PROGRAM">
             <NumberedList value={editForm.Mekanisme ?? ""} onChange={set("Mekanisme")} minRows={1} />
             <div style={{ marginTop: 8, borderTop: `1px dashed ${C.border}`, paddingTop: 8 }}>
-              <ActionPlanMekanismeDetailEdit detail={editForm.mekanismeDetail ?? detail?.mekanismeDetail} onChange={(next) => setEditForm((f: any) => ({ ...f, mekanismeDetail: next }))} />
+              <ActionPlanMekanismeDetailEdit detail={editForm.mekanismeDetail ?? detail?.mekanismeDetail} onChange={(next) => setEditForm((f: any) => ({ ...f, mekanismeDetail: next }))}formatRupiah={formatRupiah}/>
             </div>
           </SectionRow>
 

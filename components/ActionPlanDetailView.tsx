@@ -230,9 +230,9 @@ export default function ActionPlanDetailView({
                   {(detail.TargetProgram ?? []).map((row: any, i: number) => (
                     <tr key={row.id ?? i}>
                       <td style={cellBase}>{row.brand ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.wbp ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.rbp ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.cbp ?? "-"}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.wbp ?? 0)}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.rbp ?? 0)}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.cbp ?? 0)}</td>
                       <td style={{ ...cellBase, textAlign: "right" }}>{row.estimasiSales ?? "-"}</td>
                     </tr>
                   ))}
@@ -264,8 +264,8 @@ export default function ActionPlanDetailView({
                       <td style={cellBase}>{row.target ?? "-"}</td>
                       <td style={cellBase}>{row.brand ?? "-"}</td>
                       <td style={{ ...cellBase, textAlign: "right" }}>{row.qty ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.harga ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.TargetPenjualan ?? "-"}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.harga ?? 0)}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.TargetPenjualan ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -370,8 +370,8 @@ export default function ActionPlanDetailView({
               <td style={cellBase}>{row.uraian ?? "-"}</td>
               <td style={{ ...cellBase, textAlign: "right" }}>{row.qty ?? "-"}</td>
               <td style={cellBase}>{row.satuan ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.hargaUnit ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.totalBiaya ?? "-"}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.hargaUnit ?? 0)}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.totalBiaya ?? 0)}</td>
             </tr>
           ))}
         </tbody>
@@ -411,8 +411,8 @@ export default function ActionPlanDetailView({
               <td style={cellBase}>{row.jasaperorg ?? "-"}</td>
               <td style={{ ...cellBase, textAlign: "right" }}>{row.jumlahtng ?? "-"}</td>
               <td style={{ ...cellBase, textAlign: "right" }}>{row.harikerja ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.imbalanperhari ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.estimasiTotal ?? "-"}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.imbalanperhari ?? 0)}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.estimasiTotal ?? 0)}</td>
             </tr>
           ))}
         </tbody>
@@ -450,8 +450,8 @@ export default function ActionPlanDetailView({
               <td style={cellBase}>{row.namaBarang ?? "-"}</td>
               <td style={cellBase}>{row.satuan ?? "-"}</td>
               <td style={{ ...cellBase, textAlign: "right" }}>{row.qty ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.hargaUnit ?? "-"}</td>
-              <td style={{ ...cellBase, textAlign: "right" }}>{row.estimasiTotal ?? "-"}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.hargaUnit ?? 0)}</td>
+              <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.estimasiTotal ?? 0)}</td>
             </tr>
           ))}
         </tbody>
@@ -491,8 +491,8 @@ export default function ActionPlanDetailView({
                       <td style={{ ...cellBase, textAlign: "center" }}>{i + 1}</td>
                       <td style={cellBase}>{row.Programjln ?? "-"}</td>
                       <td style={{ ...cellBase, textAlign: "right" }}>{row.qtybks ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.hrgbks ?? "-"}</td>
-                      <td style={{ ...cellBase, textAlign: "right" }}>{row.Nominal ?? "-"}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.hrgbks ?? 0)}</td>
+                      <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(row.Nominal ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
