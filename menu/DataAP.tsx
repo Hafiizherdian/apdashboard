@@ -206,7 +206,7 @@ function DataAP({ theme }: { theme: Theme }) {
       render: (row) => (
         <button
           onClick={() => openDetail(row)}
-          style={{ background: t.blue.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
+          style={{ background: t.emerald.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
         >
           <FileText size={16} style={{ marginRight: 2 }} />
         </button>
@@ -308,7 +308,7 @@ function DataAP({ theme }: { theme: Theme }) {
           onClick={() => openDetail(row)}
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
           style={{ 
-            background: t.blue.text, 
+            background: t.emerald.text, 
             color: t.cardbg, 
             border: 'none', 
             cursor: 'pointer' 

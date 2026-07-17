@@ -7,7 +7,7 @@ import { Theme, tk } from '@/components/share';
 import { RoleIcon} from '@/components/Roleicon';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-  TrendingUp, Calendar, BarChart3, PieChart,
+  FileInput, FileSpreadsheet, BarChart3, PieChart,
   Activity, FileText, Store, Sun, Moon,
   ChevronLeft, Filter, X, LogOut,
   ShieldAlert, ShieldCheck, Shield,
@@ -16,8 +16,8 @@ import {
 
 const TABS=[
   {id:'Overview',        label:'Overview',       shortLabel:'Overview',  Icon:NotepadTextDashed},
-  {id:'DataAP',        label:'Data Action Plan',        shortLabel:'DataAP',   Icon:Calendar  },
-  {id:'EntryAP',     label:'Entri Action Plan',         shortLabel:'EntryAP',    Icon:BarChart3 },
+  {id:'DataAP',        label:'Data Action Plan',        shortLabel:'DataAP',   Icon:FileSpreadsheet  },
+  {id:'EntryAP',     label:'Entri Action Plan',         shortLabel:'EntryAP',    Icon:FileInput },
 //   {id:'l4wc4w',        label:'L4W vs C1W',      shortLabel:'L4W',        Icon:Activity  },
 //   {id:'yoy',           label:'YoY Growth',      shortLabel:'YoY',        Icon:PieChart  },
 //   {id:'outlet',        label:'Outlet',          shortLabel:'Outlet',     Icon:Store     },

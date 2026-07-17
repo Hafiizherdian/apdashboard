@@ -537,6 +537,18 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                   {/* ACTIONS: Tombol Detail & Hapus */}
                   <div className="flex items-center justify-end gap-2 pt-2 mt-1">
                     <button
+                      onClick={() => openDetail(item.id)}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
+                      style={{ 
+                        background: t.emerald.text, 
+                        color: t.cardbg, 
+                        border: 'none', 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      <FileText size={14} /> Detail
+                    </button>
+                    <button
                       onClick={() => setDeleteId(item.id)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity focus:ring-2 focus:ring-offset-1 focus:outline-none"
                       style={{ 
@@ -547,18 +559,6 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                       }}
                     >
                       <Trash2 size={14} /> Hapus
-                    </button>
-                    <button
-                      onClick={() => openDetail(item.id)}
-                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
-                      style={{ 
-                        background: t.blue.text, 
-                        color: t.cardbg, 
-                        border: 'none', 
-                        cursor: 'pointer' 
-                      }}
-                    >
-                      <FileText size={14} /> Detail
                     </button>
                   </div>
                 </div>
@@ -604,9 +604,9 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                               e.stopPropagation();
                               openDetail(item.id);
                             }}
-                            style={{ background: t.blue.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
+                            style={{ background: t.emerald.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
                           >
-                            <FileText size={16} style={{ marginRight: 2 }} />
+                            <FileText size={20} style={{ marginRight: 2 }} />
                           </button>
 
                           <button
@@ -614,9 +614,9 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                               e.stopPropagation();
                               setDeleteId(item.id);
                             }}
-                            style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
+                            style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
                           >
-                            <Trash2 size={16} style={{ marginRight: 2 }} />
+                            <Trash2 size={20} style={{ marginRight: 2 }} />
                           </button>
                         </div>
                       </td>
