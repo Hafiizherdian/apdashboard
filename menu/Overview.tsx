@@ -20,6 +20,7 @@ interface SummaryData {
   totalActionPlan: number;
   totalClosed: number;
   totalRunning: number;
+  totalCanceled: number;
   totalBiaya: number;
 }
 
@@ -67,12 +68,20 @@ function Overview({ theme }: { theme: Theme }) {
       .catch((err) => console.error("Gagal ambil opsi filter:", err));
   }, []);
 
+  // Penambahan deteksi Mobile & Tablet
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isTablet, setIsTablet] = useState<boolean>(false);
+
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
@@ -105,6 +114,10 @@ function Overview({ theme }: { theme: Theme }) {
       ? ((summary.totalClosed / summary.totalActionPlan) * 100).toFixed(1)
       : "0.0";
 
+  // Konfigurasi dinamis untuk kolom Grid
+  const kpiGridCols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)';
+  const chartGridCols = (isMobile || isTablet) ? '1fr' : 'repeat(2, 1fr)';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
       
@@ -116,15 +129,19 @@ function Overview({ theme }: { theme: Theme }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: GAP }}>
+      {/* Grid KPI Dinamis */}
+      <div style={{ display: 'grid', gridTemplateColumns: kpiGridCols, gap: GAP }}>
         <KpiMini theme={theme} bg={t.card1bg} border={t.card1border} labelColor={t.card1text} label="Action Plan" value={loading ? "..." : String(summary?.totalActionPlan ?? 0)} sub="Total Action Plan" />
         <KpiMini theme={theme} bg={t.card4bg} border={t.card4border} labelColor={t.card4text} label="Closed" value={loading ? "..." : String(summary?.totalClosed ?? 0)} sub="Action Plan Selesai" />
         <KpiMini theme={theme} bg={t.card2bg} border={t.card2border} labelColor={t.card2text} label="Running" value={loading ? "..." : String(summary?.totalRunning ?? 0)} sub="Action Plan Berjalan" />
+        <KpiMini theme={theme} bg={t.card6bg} border={t.card6border} labelColor={t.card6text} label="Canceled" value={loading ? " ..." : String(summary?.totalCanceled ?? 0)} sub="Action Plan Canceled" />
         <KpiMini theme={theme} bg={t.card3bg} border={t.card3border} labelColor={t.card3text} label="Total Biaya" value={loading ? "..." : formatRupiah(summary?.totalBiaya ?? 0)} sub="Total Biaya Keseluruhan" />
+        {/* Supaya di mobile item terakhir (ke-5) mengisi lebar penuh (opsional), Anda bisa pakai CSS tambahan. Tapi untuk simple grid, ini sudah cukup rapi */}
         <KpiMini theme={theme} bg={t.card5bg} border={t.card5border} labelColor={t.card5text} label="Realisasi Rate" value={loading ? "..." : `${realisasiRate} %`} sub="Rasio Action Plan Selesai" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: GAP }}>
+      {/* Grid Chart Dinamis */}
+      <div style={{ display: 'grid', gridTemplateColumns: chartGridCols, gap: GAP }}>
         <Card theme={theme} title="Jumlah AP" sub="Jumlah AP" color={t.blue.text} accent={t.blue.text} icon={<Files size={12} color={t.blue.text} />}>
           <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'IBM Plex Mono, monospace', marginBottom: 12 }}>
             Grafik tren jumlah action plan (belum ada endpoint time-series — bisa ditambah nanti kalau perlu).

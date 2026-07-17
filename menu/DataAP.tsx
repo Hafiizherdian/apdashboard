@@ -1,7 +1,7 @@
 'use client';
 
 import { tk, Theme, CardBox, FONT_MONO } from "@/components/share";
-import { FileText, X, ArrowLeft } from 'lucide-react';
+import { FileText, ArrowLeft } from 'lucide-react';
 import { Table, TableColumn } from "@/components/Table";
 import {
   ActionPlanFilterBar,
@@ -68,9 +68,10 @@ function DataAP({ theme }: { theme: Theme }) {
       .catch((err) => console.error("Gagal ambil opsi filter:", err));
   }, []);
 
+  // Breakpoint disamakan dengan EntriAP (< 1024px agar tablet masuk ke mode Card)
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -107,17 +108,17 @@ function DataAP({ theme }: { theme: Theme }) {
   }, [fetchData]);
 
   const formatDate = (date?: string | null) => {
-  if (!date) return "-";
+    if (!date) return "-";
+    const d = new Date(date);
+    const bulan = [
+      "Januari","Februari","Maret","April","Mei","Juni",
+      "Juli","Agustus","September","Oktober","November","Desember"
+    ];
+    return `${String(d.getDate()).padStart(2, "0")}/${bulan[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
+  };
 
-  const d = new Date(date);
-
-  const bulan = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember"
-  ];
-
-  return `${String(d.getDate()).padStart(2, "0")}/${bulan[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
-};
+  const formatRupiah = (v: number | null | undefined) =>
+    (v ?? 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   // ---- State untuk modal detail (read-only) ----
   const [detailOpen, setDetailOpen] = useState(false);
@@ -149,9 +150,6 @@ function DataAP({ theme }: { theme: Theme }) {
     setDetailError(null);
   };
 
-  const formatRupiah = (v: number) =>
-    (v ?? 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
-
   const columns: TableColumn<TableRow>[] = [
     { key: "area", label: "Lokasi program", isSticky: true, stickyLeft: 0, sortable: true },
     { key: "no", label: "No AP", isSticky: true, stickyLeft: 113, sortable: true },
@@ -175,47 +173,23 @@ function DataAP({ theme }: { theme: Theme }) {
     },
     {
       key: "Angbiaya", label: "Anggaran Biaya", align: "right", sortable: true,
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.Angbiaya ? row.Angbiaya.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.Angbiaya)}</span>,
     },
     { key: "jasa", label: "Total Jasa", align: "right", sortable: true, 
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.jasa ? row.jasa.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.jasa)}</span>,
     },
     { key: "posm", label: "Total POSM", align: "right", sortable: true,
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.posm ? row.posm.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.posm)}</span>,
      },
     { key: "trial", label: "Total Trial", align: "right", sortable: true,
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.trial ? row.trial.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.trial)}</span>,
      },
     { key: "Totbiaya", label: "Total Biaya", align: "right", sortable: true,
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.Totbiaya ? row.Totbiaya.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.Totbiaya)}</span>,
      },
     { key: "estimasiSales", label: "Estimasi Sales", align: "right", sortable: true },
     { key: "tarsales", label: "Target Sales", align: "right", sortable: true,
-      render: (row) => (
-        <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>
-          {row.tarsales ? row.tarsales.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-        </span>
-      ),
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{formatRupiah(row.tarsales)}</span>,
      },
     {
       key: "costratio", label: "Cost Ratio", align: "right", sortable: true,
@@ -223,7 +197,7 @@ function DataAP({ theme }: { theme: Theme }) {
     },
     {
       key: "costperpack", label: "Cost Per Pack", align: "right", sortable: true,
-      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{row.costperpack !== null ? row.costperpack.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : "-"}</span>,
+      render: (row) => <span style={{ fontFamily: FONT_MONO, color: t.textSub }}>{row.costperpack !== null ? formatRupiah(row.costperpack) : "-"}</span>,
     },
     { key: "status", label: "Status", align: "center", sortable: true },
     { key: "entri", label: "Entri", align: "center", sortable: true },
@@ -240,7 +214,6 @@ function DataAP({ theme }: { theme: Theme }) {
     },
   ];
 
-  // Reset dari halaman 1 setiap kali filter berubah
   const handleFilterChange = (next: ActionPlanFilterState) => {
     setFilters(next);
   };
@@ -256,24 +229,69 @@ function DataAP({ theme }: { theme: Theme }) {
     return 0;
   });
 
-return (
+  return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
       {!detailOpen && (
         <>
           <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />
 
-          <CardBox theme={theme} title="Daftar Action Plan">
+          {/* <CardBox theme={theme} title="Daftar Action Plan"> */}
             {error && (
               <div className="p-3 mb-3 rounded-md text-sm border" style={{ backgroundColor: t.red.bg, color: t.red.text, borderColor: t.red.border }}>
                 {error}
               </div>
             )}
+            
             {loading ? (
               <div className="py-10 text-center text-sm" style={{ color: t.textMuted }}>Memuat data...</div>
+            ) : sortedData.length === 0 ? (
+              <div className="py-10 text-center text-sm" style={{ color: t.textMuted }}>Belum ada data Action Plan.</div>
+            ) : isMobile ? (
+              /* ===== TAMPILAN CARD UNTUK MOBILE & TABLET (PERSIS ENTRI AP) ===== */
+              <div className="flex flex-col gap-2">
+                {sortedData.map((row) => (
+                  <div
+                    key={row.no}
+                    className="rounded-lg border p-3 flex flex-col gap-1.5"
+                    style={{ borderColor: t.border, backgroundColor: t.cardbg, color: t.text }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold truncate">{row.no || "-"}</div>
+                        <div className="text-xs truncate" style={{ color: t.text }}>{row.area || "-"}</div>
+                      </div>
+                      <span
+                        className="px-2 py-1 rounded-full text-xs font-medium shrink-0"
+                        style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
+                      >
+                        {row.brand || "-"}
+                      </span>
+                    </div>
+
+                    <div className="text-sm">{row.program || "-"}</div>
+
+                    <div className="flex items-center justify-between text-xs" style={{ color: t.text }}>
+                      <span>{formatDate(row.mulai)} s/d {formatDate(row.selesai) || "-"}</span>
+                      <span className="font-medium" style={{ color: t.text }}>{formatRupiah(row.Totbiaya)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        onClick={() => openDetail(row)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+                        style={{ background: t.blue.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
+                      >
+                        <FileText size={14} /> Detail
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
+              /* ===== TAMPILAN TABEL UNTUK DESKTOP ===== */
               <Table theme={theme} data={sortedData} columns={columns} rowKey={(row) => row.no} sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
             )}
-          </CardBox>
+          {/* </CardBox> */}
         </>
       )}
 
@@ -314,7 +332,7 @@ return (
               </div>
             )}
             {!detailLoading && !detailError && detailData && (
-              <ActionPlanDetailView detail={detailData} formatRupiah={formatRupiah} />
+              <ActionPlanDetailView detail={detailData} formatRupiah={(v) => formatRupiah(v)} />
             )}
           </div>
 

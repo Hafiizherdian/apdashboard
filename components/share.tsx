@@ -85,6 +85,7 @@ export const tk = {
     card3bg: '#1a1108', card3border: '#3d2b08', card3text: '#f5d060', card3accent: '#f59e0b',
     card4bg: '#1a0808', card4border: '#3d0808', card4text: '#f56060', card4accent: '#f50b0b',
     card5bg: '#11180a', card5border: '#365314', card5text: '#bef264', card5accent: '#84cc16',
+    card6bg: '#160d24', card6border: '#4c1d95', card6text: '#c4b5fd', card6accent: '#8b5cf6',
     
     // Feedback / Status
     posBg:  'rgba(16,185,129,0.09)', posText:  '#34d399', posBorder:  'rgba(16,185,129,0.2)',
@@ -176,6 +177,7 @@ export const tk = {
     card3bg: '#fefce8', card3border: '#fde68a', card3text: '#92400e', card3accent: '#f59e0b',
     card4bg: '#fef2f2', card4border: '#fecaca', card4text: '#b91c1c', card4accent: '#f50b0b',
     card5bg: '#f7fee7', card5border: '#d9f99d', card5text: '#4d7c0f', card5accent: '#84cc16',
+    card6bg: '#faf5ff', card6border: '#ddd6fe', card6text: '#6d28d9', card6accent: '#8b5cf6',
     
     // Feedback / Status
     posBg:  '#f0fdf4', posText:  '#15803d', posBorder:  '#bbf7d0',
