@@ -27,6 +27,8 @@ jobs:
             cd ~/apdashboard
 
             echo "=== Pull kode terbaru ==="
+            git reset --hard HEAD
+            git clean -fd
             git pull origin master
 
             echo "=== Install dependencies ==="
