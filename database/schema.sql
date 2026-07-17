@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
   objektif                      TEXT,
   mekanisme                     TEXT,
   mekanisme_detail              JSONB,
+  evaluasi_detail               JSONB, --ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS evaluasi_detail JSONB;
   status_override               TEXT,
 
   raw_json                      JSONB,           -- fallback: seluruh hasil parse mentah
