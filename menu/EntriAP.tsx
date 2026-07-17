@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText, Trash2, ArrowLeft} from "lucide-react";
+import { FileText, Trash2, ArrowLeft, Calendar, Landmark} from "lucide-react";
 import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/share";
 import {
   ActionPlanFilterBar,
@@ -476,47 +476,89 @@ export default function EntriAP({ theme }: { theme: Theme }) {
               Belum ada data. Upload file Action Plan untuk mulai.
             </div>
           ) : isMobile ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-lg border p-3 flex flex-col gap-1.5"
+                  className="group rounded-xl border p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-200 ease-in-out"
                   style={{ borderColor: t.border, backgroundColor: t.cardbg }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate">{item.no_action_plan || "-"}</div>
-                      <div className="text-xs truncate" style={{ color: t.textSub }}>{item.perwakilan_agen || "-"}</div>
+                  {/* HEADER: Badge Brand & No Action Plan */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div 
+                        className="text-xs font-semibold tracking-wider uppercase mb-1" 
+                        style={{ color: t.textSub }}
+                      >
+                        {item.no_action_plan || "-"}
+                      </div>
+                      {/* Nama Program dijadikan fokus utama */}
+                      <h3 
+                        className="text-base font-bold leading-tight line-clamp-2" 
+                        style={{ color: t.text }}
+                      >
+                        {item.nama_program || "-"}
+                      </h3>
                     </div>
                     <span
-                      className="px-2 py-1 rounded-full text-xs font-medium shrink-0"
-                      style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
+                      className="px-2.5 py-1 rounded-md text-xs font-semibold shrink-0 shadow-sm"
+                      style={{ 
+                        backgroundColor: t.chipSlate.bg, 
+                        color: t.chipSlate.text, 
+                        border: `1px solid ${t.chipSlate.border}` 
+                      }}
                     >
                       {item.brand || "-"}
                     </span>
                   </div>
 
-                  <div className="text-sm">{item.nama_program || "-"}</div>
-
-                  <div className="flex items-center justify-between text-xs" style={{ color: t.textSub }}>
-                    <span>{formatDate(item.tgl_mulai)} s/d {formatDate(item.tgl_selesai) || "-"}</span>
-                    <span className="font-medium" style={{ color: t.text }}>{formatRupiah(item.total_biaya)}</span>
+                  {/* BODY: Perwakilan Agen */}
+                  <div className="flex items-center gap-2 text-sm" style={{ color: t.textSub }}>
+                    <Landmark size={14} className="opacity-70 shrink-0" />
+                    <span className="truncate">{item.perwakilan_agen || "-"}</span>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                      onClick={() => openDetail(item.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
-                      style={{ background: t.blue.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
-                    >
-                      <FileText size={14} /> Detail
-                    </button>
+                  {/* DIVIDER */}
+                  <hr className="border-t border-dashed my-1" style={{ borderColor: t.border }} />
+
+                  {/* FOOTER INFO: Tanggal & Biaya */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: t.textSub }}>
+                      <Calendar size={14} className="opacity-70 shrink-0" />
+                      <span>
+                        {formatDate(item.tgl_mulai)} <span className="mx-1 opacity-50">→</span> {formatDate(item.tgl_selesai) || "-"}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold" style={{ color: t.text }}>
+                      {formatRupiah(item.total_biaya)}
+                    </div>
+                  </div>
+
+                  {/* ACTIONS: Tombol Detail & Hapus */}
+                  <div className="flex items-center justify-end gap-2 pt-2 mt-1">
                     <button
                       onClick={() => setDeleteId(item.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
-                      style={{ background: t.red.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity focus:ring-2 focus:ring-offset-1 focus:outline-none"
+                      style={{ 
+                        color: t.red.text, 
+                        backgroundColor: 'transparent',
+                        border: `1px solid ${t.red.text}`, 
+                        cursor: 'pointer' 
+                      }}
                     >
                       <Trash2 size={14} /> Hapus
+                    </button>
+                    <button
+                      onClick={() => openDetail(item.id)}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
+                      style={{ 
+                        background: t.blue.text, 
+                        color: t.cardbg, 
+                        border: 'none', 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      <FileText size={14} /> Detail
                     </button>
                   </div>
                 </div>

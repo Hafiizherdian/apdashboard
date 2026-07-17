@@ -1,7 +1,7 @@
 'use client';
 
 import { tk, Theme, CardBox, FONT_MONO } from "@/components/share";
-import { FileText, ArrowLeft } from 'lucide-react';
+import { FileText, ArrowLeft, Calendar, Landmark } from 'lucide-react';
 import { Table, TableColumn } from "@/components/Table";
 import {
   ActionPlanFilterBar,
@@ -248,45 +248,78 @@ function DataAP({ theme }: { theme: Theme }) {
               <div className="py-10 text-center text-sm" style={{ color: t.textMuted }}>Belum ada data Action Plan.</div>
             ) : isMobile ? (
               /* ===== TAMPILAN CARD UNTUK MOBILE & TABLET (PERSIS ENTRI AP) ===== */
-              <div className="flex flex-col gap-2">
-                {sortedData.map((row) => (
-                  <div
-                    key={row.no}
-                    className="rounded-lg border p-3 flex flex-col gap-1.5"
-                    style={{ borderColor: t.border, backgroundColor: t.cardbg, color: t.text }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate">{row.no || "-"}</div>
-                        <div className="text-xs truncate" style={{ color: t.text }}>{row.area || "-"}</div>
-                      </div>
-                      <span
-                        className="px-2 py-1 rounded-full text-xs font-medium shrink-0"
-                        style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
-                      >
-                        {row.brand || "-"}
-                      </span>
-                    </div>
+              <div className="flex flex-col gap-4">
+  {sortedData.map((row) => (
+    <div
+      key={row.no}
+      className="group rounded-xl border p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-200 ease-in-out"
+      style={{ borderColor: t.border, backgroundColor: t.cardbg, color: t.text }}
+    >
+      {/* HEADER: Nomor, Judul Program & Brand */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div 
+            className="text-xs font-semibold tracking-wider uppercase mb-1 opacity-70"
+          >
+            {row.no || "-"}
+          </div>
+          {/* Judul Program difokuskan menjadi elemen teks terbesar */}
+          <h3 className="text-base font-bold leading-tight line-clamp-2">
+            {row.program || "-"}
+          </h3>
+        </div>
+        <span
+          className="px-2.5 py-1 rounded-md text-xs font-semibold shrink-0 shadow-sm"
+          style={{ 
+            backgroundColor: t.chipSlate.bg, 
+            color: t.chipSlate.text, 
+            border: `1px solid ${t.chipSlate.border}` 
+          }}
+        >
+          {row.brand || "-"}
+        </span>
+      </div>
 
-                    <div className="text-sm">{row.program || "-"}</div>
+      {/* BODY: Lokasi / Area */}
+      <div className="flex items-center gap-2 text-sm opacity-80">
+        <Landmark size={14} className="shrink-0" />
+        <span className="truncate">{row.area || "-"}</span>
+      </div>
 
-                    <div className="flex items-center justify-between text-xs" style={{ color: t.text }}>
-                      <span>{formatDate(row.mulai)} s/d {formatDate(row.selesai) || "-"}</span>
-                      <span className="font-medium" style={{ color: t.text }}>{formatRupiah(row.Totbiaya)}</span>
-                    </div>
+      {/* DIVIDER */}
+      <hr className="border-t border-dashed my-1 opacity-40" style={{ borderColor: t.border }} />
 
-                    <div className="flex items-center justify-end gap-2 pt-1">
-                      <button
-                        onClick={() => openDetail(row)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
-                        style={{ background: t.blue.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
-                      >
-                        <FileText size={14} /> Detail
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* FOOTER INFO: Periode & Biaya */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium opacity-80">
+          <Calendar size={14} className="shrink-0" />
+          <span>
+            {formatDate(row.mulai)} <span className="mx-1 opacity-50">→</span> {formatDate(row.selesai) || "-"}
+          </span>
+        </div>
+        <div className="text-sm font-bold">
+          {formatRupiah(row.Totbiaya)}
+        </div>
+      </div>
+
+      {/* ACTIONS: Tombol Detail */}
+      <div className="flex items-center justify-end pt-2 mt-1">
+        <button
+          onClick={() => openDetail(row)}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
+          style={{ 
+            background: t.blue.text, 
+            color: t.cardbg, 
+            border: 'none', 
+            cursor: 'pointer' 
+          }}
+        >
+          <FileText size={14} /> Detail
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
             ) : (
               /* ===== TAMPILAN TABEL UNTUK DESKTOP ===== */
               <Table theme={theme} data={sortedData} columns={columns} rowKey={(row) => row.no} sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
