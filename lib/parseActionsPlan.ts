@@ -120,6 +120,58 @@ export interface MekanismeSheet {
   subPrograms: MekanismeSubProgram[];
 }
 
+// ---------- Sheet ke-3: EVALUASI ACTION PLAN ----------
+
+export interface EvaluasiEventRow {
+  jenisProgram?: string;
+  target?: string;
+  brand: string;
+  qty?: number;
+  hargaBks?: number;
+  persen?: number;
+  totalTargetPenjualan?: number;
+}
+
+export interface EvaluasiAnggaranRow {
+  label: string;
+  biayaPromosi?: number;
+  biayaPosm?: number;
+  biayaSampling?: number;
+  totalBiaya?: number;
+}
+
+export interface EvaluasiSamplingItemRow {
+  brand: string;
+  kebutuhan?: number | string;
+  hargaBks?: number;
+  nominal?: number;
+}
+
+export interface EvaluasiSamplingGroup {
+  label: string;
+  items: EvaluasiSamplingItemRow[];
+}
+
+export interface EvaluasiSignature {
+  label: string;
+  tanggal?: string;
+  nama?: string;
+  jabatan?: string;
+}
+
+export interface EvaluasiSheet {
+  targetEvent: EvaluasiEventRow[];
+  realisasiEvent: EvaluasiEventRow[];
+  penjelasanTargetEvent: string[];
+  anggaran: EvaluasiAnggaranRow[];
+  penjelasanAnggaran: string[];
+  samplingGroups: EvaluasiSamplingGroup[];
+  samplingDeviasi: EvaluasiSamplingItemRow | null;
+  penjelasanSampling: string[];
+  evaluasiProgram: string[];
+  signatures: EvaluasiSignature[];
+}
+
 export interface ActionPlanParsed {
   header: ActionPlanHeader;
   uraian?: string;
@@ -139,6 +191,7 @@ export interface ActionPlanParsed {
   totalBiayaYangDibutuhkan?: number;
   costRatioPercent?: number;
   mekanismeDetail?: MekanismeSheet | null;
+  evaluasi?: EvaluasiSheet | null;
   rawGrid: (string | number | null)[][];
 }
 
@@ -1226,6 +1279,437 @@ function extractMekanismeDetail(grid: (string | number | null)[][]): MekanismeSh
   return { judulSheet, noActionPlanRef, deskripsi, subPrograms };
 }
 
+// ---------- SHEET KE-3: EVALUASI ACTION PLAN ----------
+
+const EVALUASI_SECTIONS = [
+  "TARGET UNTUK EVENT ATAU SEJENISNYA",
+  "REALISASI TARGET UNTUK EVENT",
+  "ANGGARAN BIAYA PROMOSI",
+  "SAMPLING",
+  "EVALUASI PROGRAM",
+  "DIBUAT OLEH",
+] as const;
+
+/** Label-label yang menandakan kita sudah keluar dari blok data tabel event/anggaran
+ *  dan masuk ke blok penjelasan / section lain. Dipakai sebagai stop-condition
+ *  tambahan supaya baris penjelasan (yang isinya ikut ke-duplikat lewat merged cell)
+ *  tidak ke-parse sebagai baris data. */
+const EVALUASI_STOP_MARKERS = ["BERIKAN PENJELASAN", ...EVALUASI_SECTIONS];
+
+function isEvaluasiStopRow(rowVals: (string | number | null)[]): boolean {
+  const firstFilled = rowVals.find((v) => v !== null && v !== "");
+  if (!firstFilled) return false;
+  const n = normalize(firstFilled);
+  return EVALUASI_STOP_MARKERS.some((m) => n.includes(normalize(m)));
+}
+
+function findEvaluasiSectionRows(grid: (string | number | null)[][]): Record<string, number> {
+  const rows: Record<string, number> = {};
+  for (const label of EVALUASI_SECTIONS) {
+    const pos = findLabelCell(grid, label);
+    if (pos) rows[label] = pos.row;
+  }
+  return rows;
+}
+
+/**
+ * Ambil baris-baris data tabel event (Target / Realisasi).
+ * FIX: sekarang juga return `nextRow`, yaitu baris tepat setelah baris data
+ * terakhir yang berhasil dibaca (titik berhenti loop, entah karena stop-row
+ * atau baris brand kosong). Dipakai supaya pencarian penjelasan setelahnya
+ * TIDAK mulai dari header (yang bisa ikut membaca baris data sebagai
+ * "paragraf"), tapi mulai persis setelah data habis.
+ */
+function extractEvaluasiEventRows(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  endRow: number,
+  withJenisTarget: boolean
+): { rows: EvaluasiEventRow[]; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    jenisProgram: "JENIS PROGRAM",
+    target: "TARGET",
+    brand: "BRAND",
+    qty: "QTY",
+    hargaBks: ["HARGA/BKS", "HARGA / BKS", "HARGA BKS", "HARGA"],
+    persen: "%",
+    total: "TOTAL TARGET PENJUALAN",
+  });
+
+  // FIX BUG 2a: kolom "target" / "jenisProgram" gampang ke-match ke judul section
+  // "TARGET UNTUK EVENT ATAU SEJENISNYA" itu sendiri karena getColumnMap pakai
+  // substring match ("includes"). Validasi ulang: kolom cuma valid kalau isi
+  // header-nya PERSIS "TARGET" / "JENIS PROGRAM", bukan cuma mengandung kata itu.
+  const headerRowVals = grid[headerRow - 1] || [];
+  if (colMap.target !== undefined && normalize(headerRowVals[colMap.target]) !== "TARGET") {
+    delete colMap.target;
+  }
+  if (
+    colMap.jenisProgram !== undefined &&
+    normalize(headerRowVals[colMap.jenisProgram]) !== "JENIS PROGRAM"
+  ) {
+    delete colMap.jenisProgram;
+  }
+
+  const rows: EvaluasiEventRow[] = [];
+  let lastJenis: string | undefined;
+  let lastTarget: string | undefined;
+  let nextRow = endRow + 1; // default kalau loop habis tanpa break (tidak ada baris "sisa")
+
+  for (let r = headerRow + 1; r <= endRow; r++) {
+    const rowVals = grid[r - 1];
+
+    // FIX BUG 2b: stop begitu ketemu marker penjelasan / section lain, jangan
+    // cuma andalkan brandVal kosong (baris penjelasan tetap punya isi karena
+    // merged cell ikut ke-duplikat ke banyak kolom, termasuk kolom brand).
+    if (isEvaluasiStopRow(rowVals)) {
+      nextRow = r;
+      break;
+    }
+
+    const brandVal = colMap.brand !== undefined ? rowVals[colMap.brand] : null;
+    if (!brandVal) {
+      nextRow = r; // <-- titik ini dipakai sebagai start pencarian penjelasan
+      break;
+    }
+
+    const jenis = colMap.jenisProgram !== undefined ? rowVals[colMap.jenisProgram] : null;
+    const target = colMap.target !== undefined ? rowVals[colMap.target] : null;
+    if (jenis) lastJenis = String(jenis);
+    if (target) lastTarget = String(target);
+
+    rows.push({
+      jenisProgram: withJenisTarget ? lastJenis : undefined,
+      target: withJenisTarget ? lastTarget : undefined,
+      brand: String(brandVal),
+      qty: colMap.qty !== undefined ? toNumber(rowVals[colMap.qty]) : undefined,
+      hargaBks: colMap.hargaBks !== undefined ? toNumber(rowVals[colMap.hargaBks]) : undefined,
+      persen: colMap.persen !== undefined ? toNumber(rowVals[colMap.persen]) : undefined,
+      totalTargetPenjualan: colMap.total !== undefined ? toNumber(rowVals[colMap.total]) : undefined,
+    });
+  }
+  return { rows, nextRow };
+}
+
+/** Gabungkan baris bernomor ("1","2",...) ATAU paragraf polos jadi array string. */
+function collectBulletOrParagraphRows(
+  grid: (string | number | null)[][],
+  fromRow: number,
+  toRow: number
+): string[] {
+  const out: string[] = [];
+  for (let r = fromRow; r <= toRow; r++) {
+    const rowVals = grid[r - 1];
+    const firstIdx = rowVals.findIndex((v) => v !== null && v !== "");
+    if (firstIdx === -1) continue;
+    let cells = rowVals
+      .slice(firstIdx)
+      .filter((v): v is string | number => v !== null && v !== "");
+    if (cells.length && /^\d{1,2}$/.test(String(cells[0]).trim())) cells = cells.slice(1);
+
+    // FIX BUG 1: baris merged-cell yang lebar bikin nilai yang sama kebawa
+    // berkali-kali ke tiap kolom di rentang merge, jadi cells = [teksA, teksA,
+    // teksA, ...]. Dedup: buang cell yang isinya sama persis (setelah dinormalisasi)
+    // dengan cell sebelumnya, supaya paragraf gak ke-print puluhan kali.
+    const deduped: (string | number)[] = [];
+    for (const c of cells) {
+      const prev = deduped[deduped.length - 1];
+      if (deduped.length === 0 || normalize(prev) !== normalize(c)) {
+        deduped.push(c);
+      }
+    }
+
+    const text = deduped.map((v) => String(v).trim()).join(" ").trim();
+    if (text) out.push(text);
+  }
+  return out;
+}
+
+/**
+ * Cari marker "Berikan penjelasan..." di dalam range, lalu kumpulkan teks setelahnya.
+ * FIX: kalau markernya gak ada (banyak sheet Evaluasi langsung nulis paragraf
+ * bernomor tanpa marker apapun -- lihat section Target Event & Sampling),
+ * jangan return array kosong; fallback ke `searchStart` langsung.
+ *
+ * PENTING: `searchStart` di sini WAJIB diposisikan tepat setelah baris data
+ * terakhir (pakai `nextRow` dari extractEvaluasiEventRows / extractEvaluasiAnggaran /
+ * extractEvaluasiSampling), bukan dari headerRow section -- supaya baris data
+ * (brand/qty/dst) gak ikut kebaca jadi "paragraf penjelasan".
+ */
+function extractEvaluasiExplanation(
+  grid: (string | number | null)[][],
+  searchStart: number,
+  searchEnd: number
+): string[] {
+  let markerRow: number | null = null;
+  for (let r = searchStart; r <= searchEnd; r++) {
+    if (grid[r - 1]?.some((v) => normalize(v).includes("BERIKAN PENJELASAN"))) {
+      markerRow = r;
+      break;
+    }
+  }
+  const from = markerRow !== null ? markerRow + 1 : searchStart;
+  return collectBulletOrParagraphRows(grid, from, searchEnd);
+}
+
+/**
+ * Ambil baris data tabel Anggaran (PENGAJUAN / REALISASI / DEVIASI).
+ * FIX: sekarang juga return `nextRow`, dipakai buat pencarian penjelasan
+ * (jaga-jaga kalau ada file yang gak pakai marker "Berikan penjelasan..." juga
+ * di section ini).
+ */
+function extractEvaluasiAnggaran(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  endRow: number
+): { rows: EvaluasiAnggaranRow[]; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    biayaPromosi: "BIAYA PROMOSI",
+    biayaPosm: ["BIAYA POS M", "BIAYA POSM"],
+    biayaSampling: "BIAYA SAMPLING",
+    totalBiaya: "TOTAL BIAYA",
+  });
+  
+  const rows: EvaluasiAnggaranRow[] = [];
+  const dataCols = [colMap.biayaPromosi, colMap.biayaPosm, colMap.biayaSampling, colMap.totalBiaya].filter(
+    (v): v is number => v !== undefined
+  );
+  const firstDataCol = dataCols.length ? Math.min(...dataCols) : 0;
+  let lastDataRow = headerRow;
+
+  for (let r = headerRow + 1; r <= endRow; r++) {
+    const rowVals = grid[r - 1];
+
+    // FIX 1: Pengecekan stop marker yang lebih kuat.
+    // Jangan hanya cek 'firstFilled', karena sel pertama bisa saja cuma nomor urut ('02').
+    // Cek apakah ADA sel di baris ini yang memuat kata kunci stop.
+    const isStopMarker = rowVals.some(v => {
+      if (!v) return false;
+      const n = normalize(v);
+      return EVALUASI_STOP_MARKERS.some(m => n.includes(normalize(m)));
+    });
+    if (isStopMarker) break;
+
+    // FIX 2: HAPUS break logic ("PENGAJUAN" / "REALISASI" / "DEVIASI") di sini.
+    // Tabel anggaran justru WAJIB membaca baris REALISASI dan DEVIASI.
+
+    const vals = [colMap.biayaPromosi, colMap.biayaPosm, colMap.biayaSampling, colMap.totalBiaya].map((i) =>
+      i !== undefined ? rowVals[i] : null
+    );
+    const hasData = vals.some((v) => v !== null && v !== "");
+    
+    if (!hasData) {
+      // Jika kita sudah pernah memasukkan data (seperti baris Pengajuan & Realisasi), 
+      // lalu ketemu baris kosong melompong (tidak ada nominal), berarti tabel sudah habis.
+      if (rows.length > 0) break; 
+      continue;
+    }
+
+    // FIX 3: Ambil label baris, tapi ABAIKAN sel yang isinya murni angka (seperti '02' atau '03').
+    // Regex ini menyaring string yang hanya berisi angka (termasuk bila ada titik/kurung tutup setelah angka).
+    const labelCell = rowVals
+      .slice(0, firstDataCol)
+      .find((v) => v !== null && v !== "" && !/^\d+[\.\)]?$/.test(String(v).trim()));
+      
+    const label = labelCell ? String(labelCell).toUpperCase() : rows.length === 0 ? "PENGAJUAN" : "";
+
+    rows.push({
+      label,
+      biayaPromosi: colMap.biayaPromosi !== undefined ? toNumber(rowVals[colMap.biayaPromosi]) : undefined,
+      biayaPosm: colMap.biayaPosm !== undefined ? toNumber(rowVals[colMap.biayaPosm]) : undefined,
+      biayaSampling: colMap.biayaSampling !== undefined ? toNumber(rowVals[colMap.biayaSampling]) : undefined,
+      totalBiaya: colMap.totalBiaya !== undefined ? toNumber(rowVals[colMap.totalBiaya]) : undefined,
+    });
+    lastDataRow = r;
+  }
+  
+  return { rows, nextRow: lastDataRow + 1 };
+}
+
+function extractEvaluasiSampling(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  endRow: number
+): { groups: EvaluasiSamplingGroup[]; deviasi: EvaluasiSamplingItemRow | null; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    brand: "BRAND",
+    kebutuhan: "KEBUTUHAN",
+    hargaBks: ["HARGA/BKS", "HARGA / BKS", "HARGA BKS"],
+    nominal: "NOMINAL",
+  });
+  
+  const groups: EvaluasiSamplingGroup[] = [];
+  let deviasi: EvaluasiSamplingItemRow | null = null;
+  let currentGroup: EvaluasiSamplingGroup | null = null;
+  
+  let lastDataRow = headerRow;
+  let nextRow = headerRow + 1; // Default awal
+
+  const readItem = (rowVals: (string | number | null)[]): EvaluasiSamplingItemRow => {
+    const brandVal = colMap.brand !== undefined ? rowVals[colMap.brand] : null;
+    const kebutuhanRaw = colMap.kebutuhan !== undefined ? rowVals[colMap.kebutuhan] : null;
+    const kebutuhanNum = toNumber(kebutuhanRaw);
+    return {
+      brand: brandVal !== null ? String(brandVal).trim() : "",
+      kebutuhan: kebutuhanNum !== undefined ? kebutuhanNum : kebutuhanRaw !== null ? String(kebutuhanRaw) : undefined,
+      hargaBks: colMap.hargaBks !== undefined ? toNumber(rowVals[colMap.hargaBks]) : undefined,
+      nominal: colMap.nominal !== undefined ? toNumber(rowVals[colMap.nominal]) : undefined,
+    };
+  };
+
+  for (let r = headerRow + 1; r <= endRow; r++) {
+    const rowVals = grid[r - 1];
+
+    // 1. Deteksi Blok Penjelasan (Break Condition)
+    // Gabungkan teks untuk melihat apakah ini adalah paragraf penjelasan yang panjang
+    const joinedText = rowVals.filter(v => v !== null && v !== "").join(" ");
+    
+    // Stop jika ada marker spesifik ATAU jika ada teks panjang yang jelas bukan baris data
+    if (
+      joinedText.toUpperCase().includes("BERIKAN PENJELASAN") || 
+      (joinedText.length > 50 && !joinedText.toUpperCase().includes("PENGAJUAN") && !joinedText.toUpperCase().includes("REALISASI"))
+    ) {
+      nextRow = r; // nextRow langsung di-set ke baris penjelasan ini
+      break;
+    }
+
+    // 2. Tentukan Label Group atau Deviasi
+    const labelColLimit = colMap.brand !== undefined ? colMap.brand : 1;
+    const labelCandidate = rowVals.slice(0, labelColLimit).find((v) => v !== null && v !== "");
+    // Pastikan uppercase agar aman dari sifat fungsi normalize() bawaan
+    const normLabel = labelCandidate ? String(normalize(labelCandidate)).toUpperCase().trim() : "";
+
+    // 3. Cek DEVIASI (Lakukan SEBELUM mengecek kekosongan brandVal)
+    if (normLabel.includes("DEVIASI")) {
+      deviasi = readItem(rowVals);
+      lastDataRow = r;
+      nextRow = r + 1;
+      continue;
+    }
+
+    // 4. Validasi Data Item Standar (PENGAJUAN / REALISASI)
+    const brandVal = colMap.brand !== undefined ? rowVals[colMap.brand] : null;
+    if (!brandVal || String(brandVal).trim() === "" || String(brandVal).trim() === "-") {
+      continue; // Skip baris jika benar-benar kosong/tidak ada brand
+    }
+
+    // 5. Masukkan ke Group yang Tepat
+    if (normLabel.includes("PENGAJUAN") || normLabel.includes("REALISASI")) {
+      currentGroup = { label: normLabel, items: [] };
+      groups.push(currentGroup);
+    } else if (!currentGroup) {
+      currentGroup = { label: "PENGAJUAN", items: [] }; // Fallback jika tidak ada label
+      groups.push(currentGroup);
+    }
+    
+    currentGroup.items.push(readItem(rowVals));
+    lastDataRow = r;
+    nextRow = r + 1;
+  }
+
+  return { groups, deviasi, nextRow };
+}
+
+function extractEvaluasiSignatures(
+  grid: (string | number | null)[][],
+  headerRow: number
+): EvaluasiSignature[] {
+  const rowVals = grid[headerRow - 1] ?? [];
+  const labelCols: number[] = [];
+  
+  // FIX: Hindari duplikasi karena merged cells
+  let lastLabel = ""; 
+  
+  rowVals.forEach((v, idx) => {
+    if (v) {
+      const normV = normalize(v);
+      // Jika mengandung kata "OLEH" dan BUKAN pengulangan dari label sebelumnya
+      if (normV.includes("OLEH") && normV !== lastLabel) {
+        labelCols.push(idx);
+        lastLabel = normV; // Update label terakhir yang dicatat
+      }
+    }
+  });
+
+  return labelCols.map((col, i) => {
+    const nextCol = labelCols[i + 1] ?? rowVals.length;
+    const label = String(rowVals[col]);
+    const tglVal = grid[headerRow]?.[col];
+
+    let nama: string | undefined;
+    let jabatan: string | undefined;
+    for (let r = headerRow + 2; r <= grid.length; r++) {
+      const val = grid[r - 1]?.slice(col, nextCol).find((v) => v !== null && v !== "");
+      if (val) {
+        if (!nama) nama = String(val);
+        else if (!jabatan) {
+          jabatan = String(val);
+          break;
+        }
+      }
+    }
+    return { label, tanggal: tglVal ? String(tglVal) : undefined, nama, jabatan };
+  });
+}
+
+function extractEvaluasiSheet(grid: (string | number | null)[][]): EvaluasiSheet | null {
+  const sectionRows = findEvaluasiSectionRows(grid);
+  if (!sectionRows["TARGET UNTUK EVENT ATAU SEJENISNYA"]) return null;
+  const gridLen = grid.length;
+
+  const targetHeaderRow = sectionRows["TARGET UNTUK EVENT ATAU SEJENISNYA"];
+  const targetEndRow = sectionEnd(sectionRows, "TARGET UNTUK EVENT ATAU SEJENISNYA", gridLen);
+  const { rows: targetEvent } = extractEvaluasiEventRows(grid, targetHeaderRow, targetEndRow, true);
+
+  let realisasiEvent: EvaluasiEventRow[] = [];
+  let realisasiEndRow = targetEndRow;
+  // FIX: default start pencarian penjelasan = setelah section target (kalau
+  // realisasi gak ada sama sekali). Begitu ada data realisasi, ini di-update
+  // ke nextRow-nya di bawah.
+  let penjelasanStart = targetHeaderRow;
+  if (sectionRows["REALISASI TARGET UNTUK EVENT"]) {
+    const realisasiHeaderRow = sectionRows["REALISASI TARGET UNTUK EVENT"];
+    realisasiEndRow = sectionEnd(sectionRows, "REALISASI TARGET UNTUK EVENT", gridLen);
+    const res = extractEvaluasiEventRows(grid, realisasiHeaderRow, realisasiEndRow, false);
+    realisasiEvent = res.rows;
+    penjelasanStart = res.nextRow; // FIX UTAMA: mulai SETELAH data realisasi, bukan dari header
+  }
+  const penjelasanTargetEvent = extractEvaluasiExplanation(grid, penjelasanStart, realisasiEndRow);
+
+  let anggaran: EvaluasiAnggaranRow[] = [];
+  let penjelasanAnggaran: string[] = [];
+  if (sectionRows["ANGGARAN BIAYA PROMOSI"]) {
+    const hRow = sectionRows["ANGGARAN BIAYA PROMOSI"];
+    const eRow = sectionEnd(sectionRows, "ANGGARAN BIAYA PROMOSI", gridLen);
+    const res = extractEvaluasiAnggaran(grid, hRow, eRow);
+    anggaran = res.rows;
+    penjelasanAnggaran = extractEvaluasiExplanation(grid, res.nextRow, eRow);
+  }
+
+  let samplingGroups: EvaluasiSamplingGroup[] = [];
+  let samplingDeviasi: EvaluasiSamplingItemRow | null = null;
+  let penjelasanSampling: string[] = [];
+  if (sectionRows["SAMPLING"]) {
+    const hRow = sectionRows["SAMPLING"];
+    const eRow = sectionEnd(sectionRows, "SAMPLING", gridLen);
+    const s = extractEvaluasiSampling(grid, hRow, eRow);
+    samplingGroups = s.groups;
+    samplingDeviasi = s.deviasi;
+    penjelasanSampling = extractEvaluasiExplanation(grid, s.nextRow, eRow); // FIX UTAMA: mulai setelah baris DEVIASI
+  }
+
+  let evaluasiProgram: string[] = [];
+  if (sectionRows["EVALUASI PROGRAM"]) {
+    const hRow = sectionRows["EVALUASI PROGRAM"];
+    const eRow = sectionEnd(sectionRows, "EVALUASI PROGRAM", gridLen);
+    evaluasiProgram = collectBulletOrParagraphRows(grid, hRow + 1, eRow);
+  }
+
+  const signatures = sectionRows["DIBUAT OLEH"] ? extractEvaluasiSignatures(grid, sectionRows["DIBUAT OLEH"]) : [];
+
+  return { targetEvent, realisasiEvent, penjelasanTargetEvent, anggaran, penjelasanAnggaran, samplingGroups, samplingDeviasi, penjelasanSampling, evaluasiProgram, signatures };
+}
+
 // ---------- Main entry point ----------
 
 export async function parseActionPlanBuffer(
@@ -1236,6 +1720,7 @@ export async function parseActionPlanBuffer(
 
   const sheet1 = workbook.worksheets[0];
   const sheet2 = workbook.worksheets[1]; // sheet kedua (opsional) -> detail mekanisme program
+  const sheet3 = workbook.worksheets[2];
 
   const grid = sheetToGrid(sheet1);
   const gridLen = grid.length;
@@ -1280,6 +1765,18 @@ export async function parseActionPlanBuffer(
     }
   }
 
+  // --- Sheet ke-3: EVALUASI ACTION PLAN ---
+  let evaluasi: EvaluasiSheet | null = null;
+  if (sheet3) {
+    try {
+      const grid3 = sheetToGrid(sheet3);
+      evaluasi = extractEvaluasiSheet(grid3);
+    } catch (err) {
+      console.error("Gagal parsing sheet ke-3 (evaluasi):", err);
+      evaluasi = null;
+    }
+  }
+
   return {
     header,
     uraian,
@@ -1299,6 +1796,7 @@ export async function parseActionPlanBuffer(
     totalBiayaYangDibutuhkan,
     costRatioPercent,
     mekanismeDetail,
+    evaluasi,
     rawGrid: grid,
   };
 }

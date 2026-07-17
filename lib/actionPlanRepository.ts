@@ -1,6 +1,10 @@
 import { pool } from "@/lib/db"; // sesuaikan kalau nama export/path beda
-import { parseActionPlanBuffer, type ActionPlanParsed, type MekanismeSheet } from "@/lib/parseActionsPlan";
+import { parseActionPlanBuffer, type ActionPlanParsed, type MekanismeSheet,type EvaluasiSheet } from "@/lib/parseActionsPlan";
 import type { PoolClient } from "pg";
+
+// ---------- Status ----------
+
+export type ActionPlanStatus = "Running" | "Closed" | "Diperpanjang" | "Dibatalkan";
 
 // ---------- Types (mirror frontend ActionPlanDetail) ----------
 
@@ -14,7 +18,16 @@ export interface ActionPlanListItem {
   tgl_selesai: string | null;
   total_biaya: number | null;
   created_at: string;
-  status: "Running" | "Closed";
+  status: ActionPlanStatus;
+}
+
+export interface PerpanjanganRow {
+  id: number;
+  tglSelesaiLama: string | null;
+  tglSelesaiBaru: string | null;
+  noMemo: string | null;
+  keterangan: string | null;
+  tanggalPerpanjangan: string | null;
 }
 
 export interface ActionPlanDetail extends ActionPlanListItem {
@@ -31,6 +44,9 @@ export interface ActionPlanDetail extends ActionPlanListItem {
   Objektif: string | null;
   Mekanisme: string | null;
   mekanismeDetail: MekanismeSheet | null;
+  evaluasiDetail: EvaluasiSheet | null;
+  statusOverride: string | null; // null = gak ada override; "Dibatalkan" = override manual
+  perpanjangan: PerpanjanganRow[];
   TargetProgram: {
     id: number; uraian: string, brand: string; wbp: number | null; rbp: number | null;
     cbp: number | null; estimasiSales: number | null; estimasiTotal: number | null;
@@ -77,7 +93,7 @@ export interface ActionPlanFilters {
   area?: string;      // -> kolom perwakilan_agen
   kategori?: string;  // -> kolom jenis_program
   brand?: string;     // -> kolom brand
-  status?: string;    // "Running" | "Selesai" -> dihitung dari tgl_selesai, bukan kolom asli
+  status?: ActionPlanStatus;
 }
 
 /**
@@ -93,6 +109,7 @@ function buildFilterClause(
 ): string {
   if (!filters) return "";
   const prefix = tableAlias ? `${tableAlias}.` : "";
+  const idCol = tableAlias ? `${tableAlias}.id` : "id";
   const clauses: string[] = [];
 
   if (filters.area) {
@@ -107,10 +124,19 @@ function buildFilterClause(
     params.push(filters.brand);
     clauses.push(`${prefix}brand = $${params.length}`);
   }
-  if (filters.status === "Running") {
-    clauses.push(`(${prefix}tgl_selesai IS NULL OR ${prefix}tgl_selesai >= NOW())`);
+
+  const notCancelled = `${prefix}status_override IS DISTINCT FROM 'Dibatalkan'`;
+  const isRunningByDate = `(${prefix}tgl_selesai IS NULL OR ${prefix}tgl_selesai >= NOW())`;
+  const hasPerpanjangan = `EXISTS (SELECT 1 FROM action_plan_perpanjangan pp WHERE pp.action_plan_id = ${idCol})`;
+
+  if (filters.status === "Dibatalkan") {
+    clauses.push(`${prefix}status_override = 'Dibatalkan'`);
+  } else if (filters.status === "Diperpanjang") {
+    clauses.push(`(${notCancelled} AND ${isRunningByDate} AND ${hasPerpanjangan})`);
+  } else if (filters.status === "Running") {
+    clauses.push(`(${notCancelled} AND ${isRunningByDate} AND NOT ${hasPerpanjangan})`);
   } else if (filters.status === "Closed") {
-    clauses.push(`${prefix}tgl_selesai < NOW()`);
+    clauses.push(`(${notCancelled} AND NOT ${isRunningByDate})`);
   }
 
   return clauses.length ? clauses.join(" AND ") : "";
@@ -118,9 +144,23 @@ function buildFilterClause(
 
 // ---------- Helpers ----------
 
-function deriveStatus(tglSelesai: string | null): "Running" | "Closed" {
-  if (!tglSelesai) return "Running";
-  return new Date(tglSelesai).getTime() < Date.now() ? "Closed" : "Running";
+/**
+ * Urutan prioritas:
+ *  1. status_override = 'Dibatalkan' -> selalu menang, apapun tanggalnya.
+ *  2. Kalau masih aktif (tgl_selesai belum lewat / kosong) DAN punya
+ *     riwayat perpanjangan -> "Diperpanjang".
+ *  3. Kalau masih aktif tapi gak ada riwayat perpanjangan -> "Running".
+ *  4. Kalau tgl_selesai sudah lewat -> "Closed".
+ */
+function deriveStatus(
+  tglSelesai: string | null,
+  statusOverride: string | null | undefined,
+  hasPerpanjangan: boolean
+): ActionPlanStatus {
+  if (statusOverride === "Dibatalkan") return "Dibatalkan";
+  const isRunning = !tglSelesai || new Date(tglSelesai).getTime() >= Date.now();
+  if (!isRunning) return "Closed";
+  return hasPerpanjangan ? "Diperpanjang" : "Running";
 }
 
 function toDateOrNull(v: unknown): string | null {
@@ -180,7 +220,10 @@ export async function listActionPlans(opts: {
   params.push(limit, offset);
   const dataRes = await pool.query(
     `SELECT id, no_action_plan, perwakilan_agen, brand, nama_program,
-            tgl_mulai, tgl_selesai, total_biaya, created_at
+            tgl_mulai, tgl_selesai, total_biaya, created_at, status_override,
+            EXISTS (
+              SELECT 1 FROM action_plan_perpanjangan pp WHERE pp.action_plan_id = action_plans.id
+            ) AS has_perpanjangan
      FROM action_plans
      ${whereClause}
      ORDER BY created_at DESC
@@ -198,7 +241,7 @@ export async function listActionPlans(opts: {
     tgl_selesai: r.tgl_selesai,
     total_biaya: r.total_biaya !== null ? Number(r.total_biaya) : null,
     created_at: r.created_at,
-    status: deriveStatus(r.tgl_selesai),
+    status: deriveStatus(r.tgl_selesai, r.status_override, r.has_perpanjangan),
   }));
 
   return { items, total };
@@ -219,11 +262,11 @@ export interface ActionPlanTableRow {
   posm: number;           // total barangPromo
   trial: number;          // total brandJln
   Totbiaya: number;       // total_biaya_yang_dibutuhkan
-  estsales: number;       // total target_program.estimasi_total
+  estimasiSales: number;  // total target_program.estimasi_sales
   tarsales: number;       // total target_event.target_penjualan
   costratio: number | null;   // dari action_plan_analisa row "Total Biaya"
   costperpack: number | null; // dari action_plan_analisa row "Total Biaya"
-  status: "Running" | "Closed";
+  status: ActionPlanStatus;
   entri: string | null;  // source_filename dipakai sbg fallback "entri by"
 }
 
@@ -272,6 +315,10 @@ export async function listActionPlansTable(opts: {
       ap.tgl_selesai,
       ap.total_biaya_yang_dibutuhkan,
       ap.source_filename,
+      ap.status_override,
+      EXISTS (
+        SELECT 1 FROM action_plan_perpanjangan pp WHERE pp.action_plan_id = ap.id
+      ) AS has_perpanjangan,
       COALESCE(agg_ang.total, 0)  AS total_anggaran,
       COALESCE(agg_thl.total, 0)  AS total_jasa,
       COALESCE(agg_brg.total, 0)  AS total_posm,
@@ -294,7 +341,7 @@ export async function listActionPlansTable(opts: {
       SELECT SUM(estimasi_total) AS total FROM action_plan_brand_jln WHERE action_plan_id = ap.id
     ) agg_bjl ON true
     LEFT JOIN LATERAL (
-      SELECT SUM(estimasi_total) AS total FROM action_plan_target_program WHERE action_plan_id = ap.id
+      SELECT SUM(estimasi_sales) AS total FROM action_plan_target_program WHERE action_plan_id = ap.id
     ) agg_tp ON true
     LEFT JOIN LATERAL (
       SELECT SUM(target_penjualan) AS total FROM action_plan_target_event WHERE action_plan_id = ap.id
@@ -330,11 +377,11 @@ export async function listActionPlansTable(opts: {
     posm: num(r.total_posm),
     trial: num(r.total_trial),
     Totbiaya: numOrNull(r.total_biaya_yang_dibutuhkan) ?? 0,
-    estsales: num(r.total_estimasi_sales),
+    estimasiSales: num(r.total_estimasi_sales),
     tarsales: num(r.total_target_penjualan),
     costratio: numOrNull(r.cost_ratio),
     costperpack: numOrNull(r.cost_per_pack),
-    status: deriveStatus(r.tgl_selesai),
+    status: deriveStatus(r.tgl_selesai, r.status_override, r.has_perpanjangan),
     entri: r.source_filename,
   }));
 
@@ -350,7 +397,7 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
 
   const [
     targetProgram, targetEvent, distribusi, anggaran,
-    thl, barangPromo, brandJln, tbyd, transfer, analisa,
+    thl, barangPromo, brandJln, tbyd, transfer, analisa, perpanjangan,
   ] = await Promise.all([
     pool.query(`SELECT * FROM action_plan_target_program WHERE action_plan_id = $1 ORDER BY sort_order, id`, [id]),
     pool.query(`SELECT * FROM action_plan_target_event WHERE action_plan_id = $1 ORDER BY sort_order, id`, [id]),
@@ -362,6 +409,7 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
     pool.query(`SELECT * FROM action_plan_tbyd WHERE action_plan_id = $1 ORDER BY sort_order, id`, [id]),
     pool.query(`SELECT * FROM action_plan_transfer WHERE action_plan_id = $1 ORDER BY sort_order, id`, [id]),
     pool.query(`SELECT * FROM action_plan_analisa WHERE action_plan_id = $1 ORDER BY sort_order, id`, [id]),
+    pool.query(`SELECT * FROM action_plan_perpanjangan WHERE action_plan_id = $1 ORDER BY tanggal_perpanjangan, id`, [id]),
   ]);
 
   const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
@@ -388,8 +436,19 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
     Objektif: h.objektif,
     Mekanisme: h.mekanisme,
     mekanismeDetail: parseJsonbColumn<MekanismeSheet>(h.mekanisme_detail),
+    evaluasiDetail: parseJsonbColumn<EvaluasiSheet>(h.evaluasi_detail),
     created_at: h.created_at,
-    status: deriveStatus(h.tgl_selesai),
+    statusOverride: h.status_override,
+    status: deriveStatus(h.tgl_selesai, h.status_override, (perpanjangan.rowCount ?? 0) > 0),
+
+    perpanjangan: perpanjangan.rows.map((r) => ({
+      id: r.id,
+      tglSelesaiLama: r.tgl_selesai_lama,
+      tglSelesaiBaru: r.tgl_selesai_baru,
+      noMemo: r.no_memo,
+      keterangan: r.keterangan,
+      tanggalPerpanjangan: r.tanggal_perpanjangan,
+    })),
 
     TargetProgram: targetProgram.rows.map((r) => ({
       id: r.id, uraian: r.uraian, brand: r.brand, wbp: num(r.wbp), rbp: num(r.rbp), cbp: num(r.cbp),
@@ -456,8 +515,8 @@ export async function createActionPlanFromFile(
         lokasi_program, tgl_mulai, tgl_selesai, ditujukan_kepada, tembusan,
         lama_program_hari, total_biaya, total_biaya_yang_dibutuhkan,
         cost_ratio_percent, source_filename, uraian, latar_belakang, objektif,
-        mekanisme, mekanisme_detail, raw_json
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+        mekanisme, mekanisme_detail, evaluasi_detail, raw_json
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
       RETURNING id`,
       [
         h.noActionPlan ?? null,
@@ -480,6 +539,7 @@ export async function createActionPlanFromFile(
         parsed.objektif ?? null,
         parsed.mekanisme ?? null,
         parsed.mekanismeDetail ? JSON.stringify(parsed.mekanismeDetail) : null,
+        parsed.evaluasi ? JSON.stringify(parsed.evaluasi) : null,
         JSON.stringify(parsed),
       ]
     );
@@ -588,6 +648,7 @@ const HEADER_FIELD_MAP: Record<string, string> = {
   LatarBelakang: "latar_belakang",
   Objektif: "objektif",
   Mekanisme: "mekanisme",
+  statusOverride: "status_override", // "Dibatalkan" untuk membatalkan, null/"" untuk lepas override
 };
 
 const DATE_FIELDS = new Set(["tgl_mulai", "tgl_selesai"]);
@@ -608,7 +669,14 @@ export async function updateActionPlanFull(
       if (key in data) {
         const raw = data[key];
         setClauses.push(`${column} = $${idx}`);
-        values.push(DATE_FIELDS.has(column) ? toDateOrNull(raw) : raw);
+        // statusOverride: string kosong dianggap "lepas override" -> NULL
+        const value =
+          column === "status_override" && (raw === "" || raw === undefined)
+            ? null
+            : DATE_FIELDS.has(column)
+            ? toDateOrNull(raw)
+            : raw;
+        values.push(value);
         idx++;
       }
     }
@@ -619,6 +687,13 @@ export async function updateActionPlanFull(
       values.push(data.mekanismeDetail ? JSON.stringify(data.mekanismeDetail) : null);
       idx++;
     }
+
+    // evaluasiDetail (JSONB, sheet ke-3) — sama seperti mekanismeDetail
+   if ("evaluasiDetail" in data) {
+     setClauses.push(`evaluasi_detail = $${idx}`);
+     values.push(data.evaluasiDetail ? JSON.stringify(data.evaluasiDetail) : null);
+     idx++;
+   }
 
     if (setClauses.length > 0) {
       values.push(id);
@@ -749,6 +824,61 @@ export async function updateActionPlanFull(
   }
 }
 
+// ---------- Perpanjangan / Memorandum ----------
+
+/**
+ * Catat satu perpanjangan baru: simpan riwayatnya (tanggal lama, tanggal
+ * baru, no. memo), lalu update tgl_selesai di header ke tanggal baru
+ * (supaya tanggal aktif AP selalu mencerminkan perpanjangan terakhir).
+ */
+export async function addPerpanjangan(
+  actionPlanId: number,
+  data: {
+    tglSelesaiBaru: string;
+    noMemo?: string | null;
+    keterangan?: string | null;
+    tanggalPerpanjangan?: string | null;
+  }
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const current = await client.query(
+      `SELECT tgl_selesai FROM action_plans WHERE id = $1 FOR UPDATE`,
+      [actionPlanId]
+    );
+    if (current.rowCount === 0) throw new Error("Action plan tidak ditemukan");
+    const tglSelesaiLama = current.rows[0].tgl_selesai;
+
+    await client.query(
+      `INSERT INTO action_plan_perpanjangan
+        (action_plan_id, tgl_selesai_lama, tgl_selesai_baru, no_memo, keterangan, tanggal_perpanjangan)
+       VALUES ($1,$2,$3,$4,$5,COALESCE($6, CURRENT_DATE))`,
+      [
+        actionPlanId,
+        tglSelesaiLama,
+        toDateOrNull(data.tglSelesaiBaru),
+        data.noMemo ?? null,
+        data.keterangan ?? null,
+        toDateOrNull(data.tanggalPerpanjangan),
+      ]
+    );
+
+    await client.query(
+      `UPDATE action_plans SET tgl_selesai = $1, updated_at = NOW() WHERE id = $2`,
+      [toDateOrNull(data.tglSelesaiBaru), actionPlanId]
+    );
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 // ---------- Delete ----------
 
 export async function deleteActionPlan(id: number): Promise<void> {
@@ -761,6 +891,8 @@ export interface ActionPlanSummary {
   totalActionPlan: number;
   totalClosed: number;
   totalRunning: number;
+  totalDiperpanjang: number;
+  totalDibatalkan: number;
   totalBiaya: number;
 }
 
@@ -773,12 +905,18 @@ export async function getActionPlanSummary(filters?: ActionPlanFilters): Promise
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
+  const notCancelled = `status_override IS DISTINCT FROM 'Dibatalkan'`;
+  const isRunningByDate = `(tgl_selesai IS NULL OR tgl_selesai >= NOW())`;
+  const hasPerpanjangan = `EXISTS (SELECT 1 FROM action_plan_perpanjangan pp WHERE pp.action_plan_id = action_plans.id)`;
+
   const res = await pool.query(
     `
     SELECT
       COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE tgl_selesai < NOW())::int AS closed,
-      COUNT(*) FILTER (WHERE tgl_selesai >= NOW() OR tgl_selesai IS NULL)::int AS running,
+      COUNT(*) FILTER (WHERE ${notCancelled} AND NOT ${isRunningByDate})::int AS closed,
+      COUNT(*) FILTER (WHERE ${notCancelled} AND ${isRunningByDate} AND NOT ${hasPerpanjangan})::int AS running,
+      COUNT(*) FILTER (WHERE ${notCancelled} AND ${isRunningByDate} AND ${hasPerpanjangan})::int AS diperpanjang,
+      COUNT(*) FILTER (WHERE status_override = 'Dibatalkan')::int AS dibatalkan,
       COALESCE(SUM(total_biaya), 0)::numeric AS total_biaya
     FROM action_plans
     ${whereClause}
@@ -790,6 +928,8 @@ export async function getActionPlanSummary(filters?: ActionPlanFilters): Promise
     totalActionPlan: r.total,
     totalClosed: r.closed,
     totalRunning: r.running,
+    totalDiperpanjang: r.diperpanjang,
+    totalDibatalkan: r.dibatalkan,
     totalBiaya: Number(r.total_biaya),
   };
 }
