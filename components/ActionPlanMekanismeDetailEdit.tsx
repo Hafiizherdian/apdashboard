@@ -4,7 +4,7 @@ import React from "react";
 import type { MekanismeSheet, MekanismeSubProgram } from "@/components/ActionPlanMekanismeDetail";
 
 const C = {
-  yellow: "#FFFDE7",
+  yellow: "#FFFF99",
   green: "#D9EAD3",
   greenBorder: "#93C47D",
   blackBar: "#000000",
@@ -31,9 +31,19 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
+const mobileInputStyle: React.CSSProperties = {
+  width: "100%",
+  border: "1px solid #ccc",
+  borderRadius: 6,
+  padding: "7px 8px",
+  fontSize: 13,
+  outline: "none",
+  background: "#fff",
+};
+
 // Kata kunci header yang dianggap kolom nominal Rupiah (case-insensitive).
 // Samakan dengan daftar di ActionPlanMekanismeDetail.tsx supaya konsisten antara mode edit & view.
-const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp"];
+const CURRENCY_HEADER_KEYWORDS = ["harga", "biaya", "nominal", "imbalan", "rp", "estimasi"];
 
 function isCurrencyColumn(header: string | undefined): boolean {
   if (!header) return false;
@@ -69,19 +79,27 @@ function CurrencyCellInput({
   onChange,
   formatRupiah,
   bold,
+  mobile,
 }: {
   value: string | number | null;
   onChange: (v: string) => void;
   formatRupiah?: (v: number) => string;
   bold?: boolean;
+  mobile?: boolean;
 }) {
   const numeric = Number(value) || 0;
   // formatRupiah biasanya mengembalikan "Rp 1.000.000" — buang prefix "Rp" karena sudah ditampilkan terpisah.
   const display = formatRupiah ? formatRupiah(numeric).replace(/^Rp\s?/, "") : String(value ?? "");
 
   return (
-    <div style={{ display: "flex", alignItems: "center", padding: "0 8px" }}>
-      <span style={{ fontSize: 13, whiteSpace: "nowrap", marginRight: 6 }}>Rp</span>
+    <div
+      style={
+        mobile
+          ? { display: "flex", alignItems: "center", border: "1px solid #ccc", borderRadius: 6, padding: "0 8px", background: "#fff" }
+          : { display: "flex", alignItems: "center", padding: "0 8px" }
+      }
+    >
+      <span style={{ fontSize: 13, whiteSpace: "nowrap", marginRight: 6, color: mobile ? "#666" : undefined }}>Rp</span>
       <input
         type="text"
         value={display}
@@ -91,12 +109,141 @@ function CurrencyCellInput({
           border: "none",
           outline: "none",
           background: "transparent",
-          padding: "4px 0",
+          padding: mobile ? "7px 0" : "4px 0",
           fontSize: 13,
           textAlign: "right",
           fontWeight: bold ? 700 : 400,
         }}
       />
+    </div>
+  );
+}
+
+// ============================================================
+// MOBILE: header-kolom editor (dinamis) + row cards + total card
+// ============================================================
+function MobileHeaderEditor({
+  headerKolom,
+  colCount,
+  onChangeHeader,
+}: {
+  headerKolom: string[];
+  colCount: number;
+  onChangeHeader: (colIdx: number, value: string) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px", background: "#FAFAFA", borderBottom: `1px solid ${C.border}` }}>
+      {Array.from({ length: colCount }).map((_, i) => (
+        <div key={i} style={{ flex: "1 1 110px", minWidth: 100 }}>
+          <label style={{ display: "block", fontSize: 10, color: "#666", marginBottom: 2, fontWeight: 700 }}>Kolom {i + 1}</label>
+          <input
+            value={headerKolom[i] ?? ""}
+            onChange={(e) => onChangeHeader(i, e.target.value)}
+            style={{ ...mobileInputStyle, fontSize: 12, fontWeight: 600, padding: "5px 6px" }}
+            placeholder="-"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MobileRowCards({
+  rows,
+  colCount,
+  headerKolom,
+  currencyCols,
+  onChangeCell,
+  onRemoveRow,
+  formatRupiah,
+}: {
+  rows: (string | number | null)[][];
+  colCount: number;
+  headerKolom: string[];
+  currencyCols: boolean[];
+  onChangeCell: (rowIdx: number, colIdx: number, value: string) => void;
+  onRemoveRow: (rowIdx: number) => void;
+  formatRupiah?: (v: number) => string;
+}) {
+  if (!rows.length) {
+    return <div style={{ padding: "12px 8px", fontSize: 13, color: "#888", textAlign: "center" }}>Belum ada baris.</div>;
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 8 }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ border: `1px solid ${C.greenBorder}`, borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: C.green, padding: "6px 10px", fontSize: 12, fontWeight: 700 }}>
+            <span>Baris {ri + 1}</span>
+            <button
+              type="button"
+              onClick={() => onRemoveRow(ri)}
+              title="Hapus baris"
+              style={{ border: "none", background: "transparent", color: C.red, fontWeight: 700, fontSize: 16, cursor: "pointer", padding: 2 }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {Array.from({ length: colCount }).map((_, ci) => (
+              <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#666", fontWeight: 600, whiteSpace: "nowrap" }}>
+                  {headerKolom[ci] || `Kolom ${ci + 1}`}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {currencyCols[ci] ? (
+                    <CurrencyCellInput value={row[ci] ?? ""} onChange={(v) => onChangeCell(ri, ci, v)} formatRupiah={formatRupiah} mobile />
+                  ) : (
+                    <input value={(row[ci] as any) ?? ""} onChange={(e) => onChangeCell(ri, ci, e.target.value)} style={mobileInputStyle} />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MobileTotalCard({
+  totalRow,
+  colCount,
+  headerKolom,
+  currencyCols,
+  onChangeTotal,
+  formatRupiah,
+}: {
+  totalRow: (string | number | null)[];
+  colCount: number;
+  headerKolom: string[];
+  currencyCols: boolean[];
+  onChangeTotal: (colIdx: number, value: string) => void;
+  formatRupiah?: (v: number) => string;
+}) {
+  if (!totalRow.length) return null;
+  return (
+    <div style={{ margin: "0 8px 8px", border: `1px solid ${C.greenBorder ?? "#BFBF00"}`, borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ background: C.totalRow, padding: "6px 10px", fontSize: 12, fontWeight: 700 }}>TOTAL</div>
+      <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6, background: C.yellow }}>
+        {Array.from({ length: colCount }).map((_, ci) => (
+          <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, color: "#555", fontWeight: 700, whiteSpace: "nowrap" }}>
+              {headerKolom[ci] || `Kolom ${ci + 1}`}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {currencyCols[ci] ? (
+                <CurrencyCellInput value={totalRow[ci] ?? ""} onChange={(v) => onChangeTotal(ci, v)} formatRupiah={formatRupiah} bold mobile />
+              ) : (
+                <input
+                  value={(totalRow[ci] as any) ?? ""}
+                  onChange={(e) => onChangeTotal(ci, e.target.value)}
+                  style={{ ...mobileInputStyle, fontWeight: 700, background: "transparent", border: "1px solid rgba(0,0,0,0.2)" }}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -110,6 +257,7 @@ function EditableMiniTable({
   onAddRow,
   onRemoveRow,
   formatRupiah,
+  isMobile,
 }: {
   sub: MekanismeSubProgram;
   onChangeCell: (rowIdx: number, colIdx: number, value: string) => void;
@@ -118,9 +266,38 @@ function EditableMiniTable({
   onAddRow: () => void;
   onRemoveRow: (rowIdx: number) => void;
   formatRupiah?: (v: number) => string;
+  isMobile?: boolean;
 }) {
   const colCount = Math.max(sub.headerKolom.length, sub.totalRow?.length ?? 0, ...sub.rows.map((r) => r.length), 1);
   const currencyCols = Array.from({ length: colCount }).map((_, i) => isCurrencyColumn(sub.headerKolom[i]));
+
+  if (isMobile) {
+    return (
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", margin: "0 0 4px" }}>
+        <MobileHeaderEditor headerKolom={sub.headerKolom} colCount={colCount} onChangeHeader={onChangeHeader} />
+        <MobileRowCards
+          rows={sub.rows}
+          colCount={colCount}
+          headerKolom={sub.headerKolom}
+          currencyCols={currencyCols}
+          onChangeCell={onChangeCell}
+          onRemoveRow={onRemoveRow}
+          formatRupiah={formatRupiah}
+        />
+        {sub.totalRow && sub.totalRow.length > 0 && (
+          <MobileTotalCard
+            totalRow={sub.totalRow}
+            colCount={colCount}
+            headerKolom={sub.headerKolom}
+            currencyCols={currencyCols}
+            onChangeTotal={onChangeTotal}
+            formatRupiah={formatRupiah}
+          />
+        )}
+        <AddRowButton onClick={onAddRow} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -210,11 +387,13 @@ function EditableNotesList({
   onChangeNote,
   onAddNote,
   onRemoveNote,
+  isMobile,
 }: {
   notes: string[];
   onChangeNote: (idx: number, value: string) => void;
   onAddNote: () => void;
   onRemoveNote: (idx: number) => void;
+  isMobile?: boolean;
 }) {
   return (
     <div style={{ padding: "8px 8px 4px", fontSize: 12 }}>
@@ -225,7 +404,11 @@ function EditableNotesList({
           <input
             value={n}
             onChange={(e) => onChangeNote(i, e.target.value)}
-            style={{ flex: 1, border: `1px dotted ${C.border}`, outline: "none", padding: "3px 6px", fontSize: 12 }}
+            style={
+              isMobile
+                ? { flex: 1, border: "1px solid #ccc", borderRadius: 6, outline: "none", padding: "6px 8px", fontSize: 12 }
+                : { flex: 1, border: `1px dotted ${C.border}`, outline: "none", padding: "3px 6px", fontSize: 12 }
+            }
           />
           <button
             type="button"
@@ -248,15 +431,20 @@ function EditableNotesList({
  *
  * `formatRupiah` opsional: kalau diisi, kolom yang headernya mengandung kata kunci
  * currency (lihat CURRENCY_HEADER_KEYWORDS) dirender sebagai input bergaya Rupiah.
+ *
+ * `isMobile` opsional: kalau true, tiap sub-program direflow jadi card per-baris
+ * (kolom dinamis tetap didukung — label field diambil dari headerKolom).
  */
 export default function ActionPlanMekanismeDetailEdit({
   detail,
   onChange,
   formatRupiah,
+  isMobile = false,
 }: {
   detail: MekanismeSheet | null | undefined;
   onChange: (next: MekanismeSheet) => void;
   formatRupiah?: (v: number) => string;
+  isMobile?: boolean;
 }) {
   if (!detail || !detail.subPrograms) {
     return (
@@ -286,6 +474,7 @@ export default function ActionPlanMekanismeDetailEdit({
           <EditableMiniTable
             sub={sub}
             formatRupiah={formatRupiah}
+            isMobile={isMobile}
             onChangeCell={(ri, ci, v) =>
               updateSub(si, (s) => {
                 const rows = s.rows.map((r, i) => {
@@ -324,6 +513,7 @@ export default function ActionPlanMekanismeDetailEdit({
 
           <EditableNotesList
             notes={sub.notes}
+            isMobile={isMobile}
             onChangeNote={(ni, v) =>
               updateSub(si, (s) => {
                 const notes = [...s.notes];

@@ -12,6 +12,7 @@ import {
   filterStateToParams,
 } from "@/components/Filter";
 import ExcelReplicaBody from "@/components/apreplica"
+import EvaluasiReplicaBody from "@/components/evaluasireplica"
 
 // ---------- Types ----------
 
@@ -245,9 +246,11 @@ export default function EntriAP({ theme }: { theme: Theme }) {
       .catch((err) => console.error("Gagal ambil opsi filter:", err));
   }, []);
 
+  // Breakpoint: <768 dianggap mobile (HP), 768-1024 tablet ikut layout mobile juga
+  // biar tabel lebar gak overflow. Tablet lanskap besar (>1024) masih bisa lihat tabel.
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -266,6 +269,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<ActionPlanDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailPage, setDetailPage] = useState<"ap" | "evaluasi">("ap");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<ActionPlanDetail>>({});
@@ -352,6 +356,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
 
   const openDetail = async (id: number) => {
     setSelectedId(id);
+    setDetailPage("ap");
     setLoadingDetail(true);
     try {
       const found = await apiFetchDetail(id);
@@ -369,6 +374,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     setDetail(null);
     setEditForm({});
     setSaveError(null);
+    setDetailPage("ap");
   };
 
   const handleSave = async () => {
@@ -407,7 +413,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     <div className="p-2 space-y-2" style={{ backgroundColor: t.pagebg, color: t.text, minHeight: "100vh" }}>
       {!selectedId && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h1 className="text-xl font-semibold">Entri Action Plan</h1>
 
             <label className="inline-flex items-center gap-2 px-2 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-colors">
@@ -453,43 +459,89 @@ export default function EntriAP({ theme }: { theme: Theme }) {
             </div>
           )}
 
-          {/* Table list */}
-          <div className="border rounded-md overflow-hidden" style={{ borderColor: t.border, backgroundColor: t.cardbg }}>
-            <table className="w-full text-sm">
-              <thead className="text-left" style={{ backgroundColor: t.tableHead, color: t.text }}>
-                <tr>
-                  <th className="px-3 py-3 font-semibold">No. Action Plan</th>
-                  <th className="px-3 py-3 font-semibold">Perwakilan</th>
-                  <th className="px-3 py-3 font-semibold">Brand</th>
-                  <th className="px-3 py-3 font-semibold">Program</th>
-                  <th className="px-3 py-3 font-semibold">Periode</th>
-                  <th className="px-3 py-3 font-semibold text-right">Total Biaya</th>
-                  <th className="px-3 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: t.border }}>
-                {loadingList ? (
+          {/* List: card di mobile/tablet, tabel di desktop */}
+          {loadingList ? (
+            <div
+              className="border rounded-md flex flex-col items-center justify-center gap-3 py-10"
+              style={{ borderColor: t.border, backgroundColor: t.cardbg, color: t.textSub }}
+            >
+              <Spinner size={28} color={t.blue.text} />
+              <span>Memuat data...</span>
+            </div>
+          ) : items.length === 0 ? (
+            <div
+              className="border rounded-md py-10 text-center"
+              style={{ borderColor: t.border, backgroundColor: t.cardbg, color: t.textMuted }}
+            >
+              Belum ada data. Upload file Action Plan untuk mulai.
+            </div>
+          ) : isMobile ? (
+            <div className="flex flex-col gap-2">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg border p-3 flex flex-col gap-1.5"
+                  style={{ borderColor: t.border, backgroundColor: t.cardbg }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{item.no_action_plan || "-"}</div>
+                      <div className="text-xs truncate" style={{ color: t.textSub }}>{item.perwakilan_agen || "-"}</div>
+                    </div>
+                    <span
+                      className="px-2 py-1 rounded-full text-xs font-medium shrink-0"
+                      style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
+                    >
+                      {item.brand || "-"}
+                    </span>
+                  </div>
+
+                  <div className="text-sm">{item.nama_program || "-"}</div>
+
+                  <div className="flex items-center justify-between text-xs" style={{ color: t.textSub }}>
+                    <span>{formatDate(item.tgl_mulai)} s/d {formatDate(item.tgl_selesai) || "-"}</span>
+                    <span className="font-medium" style={{ color: t.text }}>{formatRupiah(item.total_biaya)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      onClick={() => openDetail(item.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+                      style={{ background: t.blue.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
+                    >
+                      <FileText size={14} /> Detail
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(item.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+                      style={{ background: t.red.text, color: t.cardbg, border: 'none', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} /> Hapus
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border rounded-md overflow-hidden" style={{ borderColor: t.border, backgroundColor: t.cardbg }}>
+              <table className="w-full text-sm">
+                <thead className="text-left" style={{ backgroundColor: t.tableHead, color: t.text }}>
                   <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center flex justify-center w-full">
-                      <div className="flex flex-col items-center gap-3" style={{ color: t.textSub }}>
-                        <Spinner size={28} color={t.blue.text} />
-                        <span>Memuat data...</span>
-                      </div>
-                    </td>
+                    <th className="px-3 py-3 font-semibold">No. Action Plan</th>
+                    <th className="px-3 py-3 font-semibold">Perwakilan</th>
+                    <th className="px-3 py-3 font-semibold">Brand</th>
+                    <th className="px-3 py-3 font-semibold">Program</th>
+                    <th className="px-3 py-3 font-semibold">Periode</th>
+                    <th className="px-3 py-3 font-semibold text-right">Total Biaya</th>
+                    <th className="px-3 py-3"></th>
                   </tr>
-                ) : items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center" style={{ color: t.textMuted }}>
-                      Belum ada data. Upload file Action Plan untuk mulai.
-                    </td>
-                  </tr>
-                ) : (
-                  items.map((item) => (
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: t.border }}>
+                  {items.map((item) => (
                     <tr
                       key={item.id}
                       className="transition-colors"
                       style={{ ':hover': { backgroundColor: t.rowHover } } as any}
-                      // onClick={() => openDetail(item.id)}
                     >
                       <td className="px-3 py-3">{item.no_action_plan || "-"}</td>
                       <td className="px-3 py-3">{item.perwakilan_agen || "-"}</td>
@@ -527,14 +579,14 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Pagination */}
-          <div className="flex items-center justify-between text-sm" style={{ color: t.textSub }}>
+          <div className="flex items-center justify-between text-sm flex-wrap gap-2" style={{ color: t.textSub }}>
             <span>
               Halaman {page} dari {totalPages} ({total} data)
             </span>
@@ -568,7 +620,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
         >
           {/* Header */}
           <div
-            className="shrink-0 px-5 py-4 flex items-center justify-between gap-3"
+            className="shrink-0 px-5 py-4 flex items-center justify-between gap-3 flex-wrap"
             style={{ backgroundColor: t.headerbg, borderBottom: `1px solid ${t.border}` }}
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -580,7 +632,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
                 <ArrowLeft size={16} />
                 Kembali
               </button>
-              <img src="logo-cgkn.png" alt="CGKN" width={20} height={20}/>
+              {!isMobile && <img src="logo-cgkn.png" alt="CGKN" width={20} height={20}/>}
               <div className="min-w-0">
                 <h2 className="text-base font-semibold truncate" style={{ color: t.text }}>
                   {loadingDetail || !detail ? "Memuat detail..." : (detail.nama_program || "Detail Action Plan")}
@@ -600,7 +652,7 @@ export default function EntriAP({ theme }: { theme: Theme }) {
           {!loadingDetail && detail && (
             <div
               className="shrink-0 flex gap-1.5 overflow-x-auto px-4 py-2"
-              style={{ backgroundColor: t.headerbg, borderBottom: `1px solid ${t.border}` }}
+              style={{ backgroundColor: t.headerbg, borderBottom: `1px solid ${t.border}`, WebkitOverflowScrolling: "touch" }}
             >
               {DETAIL_SECTIONS.map((s) => (
                 <button
@@ -616,42 +668,63 @@ export default function EntriAP({ theme }: { theme: Theme }) {
           )}
 
           {/* Scrollable body */}
-          <ExcelReplicaBody
-            loadingDetail={loadingDetail}
-            detail={detail}
-            saveError={saveError}
-            editForm={editForm}
-            setEditForm={setEditForm}
-            handleTableChange={handleTableChange}
-            formatRupiah={formatRupiah}
-            modalScrollRef={modalScrollRef}
-          />
+         {detailPage === "ap" ? (
+           <ExcelReplicaBody
+             loadingDetail={loadingDetail}
+             detail={detail}
+             saveError={saveError}
+             editForm={editForm}
+             setEditForm={setEditForm}
+             handleTableChange={handleTableChange}
+             formatRupiah={formatRupiah}
+             modalScrollRef={modalScrollRef}
+             isMobile={isMobile}
+           />
+         ) : (
+           <EvaluasiReplicaBody
+             loadingDetail={loadingDetail}
+             detail={detail}
+             editForm={editForm}
+             setEditForm={setEditForm}
+             formatRupiah={formatRupiah}
+             modalScrollRef={modalScrollRef}
+             isMobile={isMobile}
+           />
+         )}
 
           {/* Sticky footer */}
           {!loadingDetail && detail && (
             <div
-              className="shrink-0 px-5 py-3 flex items-center justify-between gap-3 flex-wrap"
+              className="shrink-0 px-3 sm:px-5 py-3 flex items-center justify-between gap-2 flex-wrap"
               style={{ backgroundColor: t.headerbg, borderTop: `1px solid ${t.border}`, boxShadow: '0 -2px 12px rgba(0,0,0,0.06)' }}
             >
-              <span className="text-xs truncate" style={{ color: t.textMuted }}>
+              <span className="text-xs truncate w-full sm:w-auto order-3 sm:order-1" style={{ color: t.textMuted }}>
                 {detail.source_filename ? `Sumber file: ${detail.source_filename}` : ""}
               </span>
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto flex-wrap order-2 w-full sm:w-auto justify-end">
                 <button
                   onClick={closeDetail}
                   disabled={saving}
-                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
                   style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
                 >
                   Kembali
                 </button>
                 <button
+                 onClick={() => setDetailPage((p) => (p === "ap" ? "evaluasi" : "ap"))}
+                 disabled={saving}
+                 className="px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                 style={{ backgroundColor: t.blue.bg, color: t.blue.text, border: `1px solid ${t.blue.border}` }}
+               >
+                 {detailPage === "ap" ? (isMobile ? "Evaluasi →" : "Selanjutnya: Evaluasi →") : "← Kembali ke Action Plan"}
+               </button>
+                <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer"
+                  className="px-4 sm:px-5 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   {saving && <Spinner size={16} />}
-                  {saving ? "Menyimpan..." : "Simpan Perubahan"}
+                  {saving ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>
             </div>

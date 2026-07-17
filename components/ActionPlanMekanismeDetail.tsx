@@ -3,7 +3,7 @@
 import React from "react";
 
 const C = {
-  yellow: "#FFFDE7",
+  yellow: "#FFFF99",
   green: "#D9EAD3",
   greenBorder: "#93C47D",
   blackBar: "#000000",
