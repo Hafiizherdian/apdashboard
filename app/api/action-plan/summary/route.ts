@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActionPlanSummary } from "@/lib/actionPlanRepository";
+import type { ActionPlanStatus } from "@/lib/actionPlanRepository";
 
 export const runtime = "nodejs";
+
+const VALID_STATUSES: ActionPlanStatus[] = ["Running", "Closed", "Diperpanjang", "Dibatalkan"];
+
+function toStatus(v: string | null): ActionPlanStatus | undefined {
+  return v && (VALID_STATUSES as string[]).includes(v) ? (v as ActionPlanStatus) : undefined;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,7 +21,7 @@ export async function GET(req: NextRequest) {
       area: area && area !== "all" ? area : undefined,
       kategori: kategori && kategori !== "all" ? kategori : undefined,
       brand: brand && brand !== "all" ? brand : undefined,
-      status: status && status !== "all" ? status : undefined,
+      status: status && status !== "all" ? toStatus(status) : undefined,
     };
 
     const summary = await getActionPlanSummary(filters);

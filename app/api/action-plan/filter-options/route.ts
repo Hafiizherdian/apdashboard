@@ -22,10 +22,11 @@ export async function GET() {
       area: area.rows.map((r) => r.value as string),
       kategori: kategori.rows.map((r) => r.value as string),
       brand: brand.rows.map((r) => r.value as string),
-      // Status BUKAN kolom yang di-query dari DB — selalu dihitung dari
-      // tgl_selesai vs tanggal sekarang (lihat deriveStatus() di
-      // actionPlanRepository.ts), jadi cuma dua kemungkinan tetap ini.
-      status: ["Running", "Closed"],
+      // Status BUKAN kolom yang di-query dari DB — dihitung dari kombinasi
+      // tgl_selesai, status_override, dan riwayat action_plan_perpanjangan
+      // (lihat deriveStatus() di actionPlanRepository.ts), jadi cuma 4
+      // kemungkinan tetap ini.
+      status: ["Running", "Closed", "Diperpanjang", "Dibatalkan"],
     });
   } catch (err) {
     console.error("Gagal ambil filter options:", err);

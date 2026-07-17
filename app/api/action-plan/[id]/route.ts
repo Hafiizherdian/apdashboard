@@ -35,6 +35,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       "uraian", "LatarBelakang", "Objektif", "Mekanisme",
       "TargetProgram", "TargetEvent", "DataDistribusi", "anggaranBiaya",
       "thl", "barangPromo", "brandjln", "tbyd", "transfer", "analisa",
+      "mekanismeDetail", "evaluasiDetail",
     ] as const;
 
     const updateData: Record<string, unknown> = {};
