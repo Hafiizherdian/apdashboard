@@ -20,6 +20,7 @@ interface SummaryData {
   totalActionPlan: number;
   totalClosed: number;
   totalRunning: number;
+  totalDiperpanjang: number;
   totalCanceled: number;
   totalBiaya: number;
 }
@@ -27,7 +28,7 @@ interface SummaryData {
 function ChartPlaceholder({ theme }: { theme: Theme }) {
   const t = tk[theme];
   return (
-    <div style={{ height: 220, border: `1px dashed ${t.border}`, borderRadius: 10, padding: 16, display: "flex", alignItems: "flex-end", gap: 10, background: t.cardbg }}>
+    <div style={{ height: 320, border: `1px dashed ${t.border}`, borderRadius: 10, padding: 16, display: "flex", alignItems: "flex-end", gap: 10, background: t.cardbg }}>
       {[40, 80, 120, 70, 150, 100, 130].map((h, i) => (
         <div key={i} style={{ flex: 1, height: h, borderRadius: 6, background: t.blue.text, opacity: 0.75 }} />
       ))}
@@ -38,7 +39,7 @@ function ChartPlaceholder({ theme }: { theme: Theme }) {
 function PiePlaceholder({ theme }: { theme: Theme }) {
   const t = tk[theme];
   return (
-    <div style={{ height: 220, display: "flex", justifyContent: "center", alignItems: "center", border: `1px dashed ${t.border}`, borderRadius: 10, background: t.cardbg }}>
+    <div style={{ height: 320, display: "flex", justifyContent: "center", alignItems: "center", border: `1px dashed ${t.border}`, borderRadius: 10, background: t.cardbg }}>
       <div style={{ width: 140, height: 140, borderRadius: "50%", position: "relative", background: `conic-gradient(${t.green.text} 0deg 120deg, ${t.blue.text} 120deg 220deg, ${t.card3accent} 220deg 290deg, ${t.card4accent} 290deg 360deg)` }}>
         <div style={{ position: "absolute", inset: 35, background: t.cardbg, borderRadius: "50%" }} />
       </div>
@@ -115,7 +116,7 @@ function Overview({ theme }: { theme: Theme }) {
       : "0.0";
 
   // Konfigurasi dinamis untuk kolom Grid
-  const kpiGridCols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)';
+  const kpiGridCols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(7, 1fr)';
   const chartGridCols = (isMobile || isTablet) ? '1fr' : 'repeat(2, 1fr)';
 
   return (
@@ -134,6 +135,7 @@ function Overview({ theme }: { theme: Theme }) {
         <KpiMini theme={theme} bg={t.card1bg} border={t.card1border} labelColor={t.card1text} label="Action Plan" value={loading ? "..." : String(summary?.totalActionPlan ?? 0)} sub="Total Action Plan" />
         <KpiMini theme={theme} bg={t.card4bg} border={t.card4border} labelColor={t.card4text} label="Closed" value={loading ? "..." : String(summary?.totalClosed ?? 0)} sub="Action Plan Selesai" />
         <KpiMini theme={theme} bg={t.card2bg} border={t.card2border} labelColor={t.card2text} label="Running" value={loading ? "..." : String(summary?.totalRunning ?? 0)} sub="Action Plan Berjalan" />
+        <KpiMini theme={theme} bg={t.card2bg} border={t.card2border} labelColor={t.card2text} label="Diperpanjang" value={loading ? "..." : String(summary?.totalDiperpanjang ?? 0)} sub="Action Plan Diperpanjang" />
         <KpiMini theme={theme} bg={t.card6bg} border={t.card6border} labelColor={t.card6text} label="Canceled" value={loading ? " ..." : String(summary?.totalCanceled ?? 0)} sub="Action Plan Canceled" />
         <KpiMini theme={theme} bg={t.card3bg} border={t.card3border} labelColor={t.card3text} label="Total Biaya" value={loading ? "..." : formatRupiah(summary?.totalBiaya ?? 0)} sub="Total Biaya Keseluruhan" />
         {/* Supaya di mobile item terakhir (ke-5) mengisi lebar penuh (opsional), Anda bisa pakai CSS tambahan. Tapi untuk simple grid, ini sudah cukup rapi */}

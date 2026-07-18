@@ -271,9 +271,9 @@ function DataAP({ theme }: { theme: Theme }) {
         <span
           className="px-2.5 py-1 rounded-md text-xs font-semibold shrink-0 shadow-sm"
           style={{ 
-            backgroundColor: t.chipSlate.bg, 
-            color: t.chipSlate.text, 
-            border: `1px solid ${t.chipSlate.border}` 
+            backgroundColor: t.chipGreen.bg, 
+            color: t.chipGreen.text, 
+            border: `1px solid ${t.chipGreen.border}` 
           }}
         >
           {row.brand || "-"}
@@ -365,7 +365,7 @@ function DataAP({ theme }: { theme: Theme }) {
               </div>
             )}
             {!detailLoading && !detailError && detailData && (
-              <ActionPlanDetailView detail={detailData} formatRupiah={(v) => formatRupiah(v)} />
+              <ActionPlanDetailView detail={detailData} formatRupiah={(v) => formatRupiah(v)} isMobile={isMobile} />
             )}
           </div>
 
