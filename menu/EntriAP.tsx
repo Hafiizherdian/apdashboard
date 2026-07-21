@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText, Trash2, ArrowLeft, Calendar, Landmark} from "lucide-react";
+import { FileText, Trash2, ArrowLeft, Calendar, Landmark, Upload, FileSpreadsheet, X } from "lucide-react";
+import { AreaConfig } from "@/lib/areaConfig";
 import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/share";
 import {
   ActionPlanFilterBar,
@@ -13,6 +14,7 @@ import {
 } from "@/components/Filter";
 import ExcelReplicaBody from "@/components/apreplica"
 import EvaluasiReplicaBody from "@/components/evaluasireplica"
+import { Table, TableColumn } from "@/components/Table";
 
 // ---------- Types ----------
 
@@ -201,9 +203,10 @@ async function apiDelete(id: number) {
   if (!res.ok) throw new Error("Gagal menghapus data");
 }
 
-async function apiUpload(file: File) {
+async function apiUpload(file: File, area: string) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("area", area);
   const res = await fetch("/api/action-plan/upload", { method: "POST", body: formData });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Gagal upload file");
@@ -265,6 +268,18 @@ export default function EntriAP({ theme }: { theme: Theme }) {
 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+const [isDragging, setIsDragging] = useState(false);
+const [allAreas, setAllAreas] = useState<AreaConfig[]>([]);
+const [manualArea, setManualArea] = useState("");
+const fileInputRef = useRef<HTMLInputElement>(null);
+
+useEffect(() => {
+  fetch("/api/areas")
+    .then((res) => res.json())
+    .then((json) => setAllAreas(json?.data?.areas ?? []))
+    .catch((err) => console.error("Gagal ambil area:", err));
+}, []);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<ActionPlanDetail | null>(null);
@@ -322,27 +337,43 @@ export default function EntriAP({ theme }: { theme: Theme }) {
     fetchList();
   }, [fetchList]);
 
-  const handleUpload = async (file: File) => {
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const newId = await apiUpload(file);
-      setPage(1);
-      await fetchList();
-      await openDetail(newId);
-    } catch (err: any) {
-      console.error("Gagal upload:", err);
-      setUploadError(err?.message || "Terjadi kesalahan saat upload.");
-    } finally {
-      setUploading(false);
-    }
-  };
+const handleFileSelect = (file: File) => {
+  setUploadError(null);
+  if (/\.(xlsx|xlsm)$/i.test(file.name)) {
+    setSelectedFile(file);
+  } else {
+    setUploadError("Format tidak didukung. Gunakan .xlsx atau .xlsm");
+  }
+};
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUpload(file);
-    e.target.value = "";
-  };
+const handleUpload = async () => {
+  if (!selectedFile || uploading) return;
+  if (!manualArea) {
+    setUploadError("Pilih regional terlebih dahulu");
+    return;
+  }
+  setUploading(true);
+  setUploadError(null);
+  try {
+    const newId = await apiUpload(selectedFile, manualArea);
+    setSelectedFile(null);
+    setManualArea("");
+    setPage(1);
+    await fetchList();
+    await openDetail(newId);
+  } catch (err: any) {
+    console.error("Gagal upload:", err);
+    setUploadError(err?.message || "Terjadi kesalahan saat upload.");
+  } finally {
+    setUploading(false);
+  }
+};
+
+const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) handleFileSelect(file);
+  e.target.value = "";
+};
 
   const formatDate = (date?: string | null) => {
   if (!date) return "-";
@@ -408,37 +439,191 @@ export default function EntriAP({ theme }: { theme: Theme }) {
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const columns: TableColumn<ActionPlanListItem>[] = [
+  { key: "no_action_plan", label: "No. Action Plan", sortable: true },
+  { key: "perwakilan_agen", label: "Perwakilan", sortable: true },
+  {
+    key: "brand", label: "Brand", sortable: true,
+    render: (row) => (
+      <span
+        className="px-2 py-1 rounded-full text-xs font-medium"
+        style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}
+      >
+        {row.brand || "-"}
+      </span>
+    ),
+  },
+  { key: "nama_program", label: "Program", sortable: true },
+  {
+    key: "tgl_mulai", label: "Periode", sortable: true,
+    render: (row) => (
+      <span>{formatDate(row.tgl_mulai)} s/d {formatDate(row.tgl_selesai) || "-"}</span>
+    ),
+  },
+  {
+    key: "total_biaya", label: "Total Biaya", align: "right", sortable: true,
+    render: (row) => <span>{formatRupiah(row.total_biaya)}</span>,
+  },
+  {
+    key: "action", label: "", align: "center", sortable: false,
+    render: (row) => (
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); openDetail(row.id); }}
+          style={{ background: t.emerald.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
+        >
+          <FileText size={20} />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setDeleteId(row.id); }}
+          style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
+        >
+          <Trash2 size={20} />
+        </button>
+      </div>
+    ),
+  },
+];
+
+const sortedItems = [...items].sort((a, b) => {
+  if (!sortBy) return 0;
+  const valA = (a as any)[sortBy];
+  const valB = (b as any)[sortBy];
+  if (valA === null || valA === undefined) return 1;
+  if (valB === null || valB === undefined) return -1;
+  if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+  if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+  return 0;
+});
 
   return (
     <div className="p-2 space-y-2" style={{ backgroundColor: t.pagebg, color: t.text, minHeight: "100vh" }}>
       {!selectedId && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h1 className="text-xl font-semibold">Entri Action Plan</h1>
+  <h1 className="text-xl font-semibold">Entri Action Plan</h1>
+</div>
 
-            <label className="inline-flex items-center gap-2 px-2 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {uploading ? (
-                <span className="flex items-center gap-2">
-                  <Spinner size={16} /> Mengupload...
-                </span>
-              ) : (
-                "Upload AP (.xlsx)"
-              )}
-              <input
-                type="file"
-                accept=".xlsx,.xlsm"
-                className="hidden"
-                onChange={onFileChange}
-                disabled={uploading}
-              />
-            </label>
+<div
+  className="rounded-xl border p-4 flex flex-col gap-3"
+  style={{ borderColor: t.border, backgroundColor: t.cardbg }}
+>
+  <span className="text-sm font-semibold" style={{ color: t.text }}>
+    Upload Action Plan (.xlsx)
+  </span>
+
+  {uploadError && (
+    <div className="p-3 rounded-md text-sm border" style={{ backgroundColor: t.red.bg, color: t.red.text, borderColor: t.red.border }}>
+      {uploadError}
+    </div>
+  )}
+
+  <div
+    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+    onDrop={(e) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const f = e.dataTransfer.files[0];
+      if (f) handleFileSelect(f);
+    }}
+    onClick={() => !selectedFile && fileInputRef.current?.click()}
+    style={{
+      border: `2px dashed ${isDragging ? t.blue.border : selectedFile ? t.green.border : t.borderInput}`,
+      borderRadius: 10,
+      padding: selectedFile ? 14 : 26,
+      textAlign: "center",
+      background: isDragging ? t.blue.bg : selectedFile ? t.green.bg : t.inputBg,
+      cursor: selectedFile ? "default" : "pointer",
+      transition: "all 0.2s",
+    }}
+  >
+    {!selectedFile ? (
+      <>
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: 10, margin: "0 auto 8px",
+            background: isDragging ? t.blue.bg : t.inputBg,
+            border: `1.5px dashed ${isDragging ? t.blue.border : t.borderInput}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <Upload size={18} color={isDragging ? t.blue.text : t.textMuted} />
+        </div>
+        <div className="text-sm font-medium" style={{ color: t.text }}>
+          {isDragging ? "Lepaskan di sini" : "Drag & drop file di sini, atau klik untuk pilih"}
+        </div>
+        <div className="text-xs mt-1" style={{ color: t.textMuted }}>Format .xlsx / .xlsm</div>
+      </>
+    ) : (
+      <div className="flex items-center gap-3 text-left">
+        <div
+          style={{
+            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+            background: t.green.bg, border: `1px solid ${t.green.border}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <FileSpreadsheet size={16} color={t.green.text} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium truncate" style={{ color: t.text }}>{selectedFile.name}</div>
+          <div className="text-xs" style={{ color: t.textMuted, fontFamily: FONT_MONO }}>
+            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
           </div>
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+          style={{
+            width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
+            background: t.red.bg, border: `1px solid ${t.red.border}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <X size={12} color={t.red.text} />
+        </button>
+      </div>
+    )}
+  </div>
+  <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm" className="hidden" onChange={onFileChange} />
 
-          {uploadError && (
-            <div className="p-3 rounded-md text-sm border" style={{ backgroundColor: t.red.bg, color: t.red.text, borderColor: t.red.border }}>
-              {uploadError}
-            </div>
-          )}
+  <FormGroup label="Regional / Area" theme={theme}>
+    {allAreas.length === 0 ? (
+      <div className="text-xs" style={{ color: t.textMuted }}>Memuat area...</div>
+    ) : (
+      <select
+        value={manualArea}
+        onChange={(e) => setManualArea(e.target.value)}
+        className="w-full px-3 py-2 border rounded-md text-sm outline-none"
+        style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
+      >
+        <option value="">— Pilih regional —</option>
+        {allAreas.map((a) => (
+          <option key={a.id} value={a.id}>{a.name || a.id}</option>
+        ))}
+      </select>
+    )}
+  </FormGroup>
+
+  <div className="flex justify-end gap-2">
+    <button
+      onClick={() => fileInputRef.current?.click()}
+      className="px-3 py-2 rounded-md text-sm font-medium"
+      style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
+    >
+      {selectedFile ? "Ganti File" : "Pilih File"}
+    </button>
+    <button
+      onClick={handleUpload}
+      disabled={!selectedFile || !manualArea || uploading}
+      className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+      style={{ backgroundColor: "#2563eb", border: "none", cursor: (!selectedFile || !manualArea || uploading) ? "not-allowed" : "pointer" }}
+    >
+      {uploading && <Spinner size={14} color="#fff" />}
+      {uploading ? "Mengupload..." : "Upload"}
+    </button>
+  </div>
+</div>
 
           {/* Filter */}
           <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />
@@ -565,66 +750,15 @@ export default function EntriAP({ theme }: { theme: Theme }) {
               ))}
             </div>
           ) : (
-            <div className="border rounded-md overflow-hidden" style={{ borderColor: t.border, backgroundColor: t.cardbg }}>
-              <table className="w-full text-sm">
-                <thead className="text-left" style={{ backgroundColor: t.tableHead, color: t.text }}>
-                  <tr>
-                    <th className="px-3 py-3 font-semibold">No. Action Plan</th>
-                    <th className="px-3 py-3 font-semibold">Perwakilan</th>
-                    <th className="px-3 py-3 font-semibold">Brand</th>
-                    <th className="px-3 py-3 font-semibold">Program</th>
-                    <th className="px-3 py-3 font-semibold">Periode</th>
-                    <th className="px-3 py-3 font-semibold text-right">Total Biaya</th>
-                    <th className="px-3 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: t.border }}>
-                  {items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="transition-colors"
-                      style={{ ':hover': { backgroundColor: t.rowHover } } as any}
-                    >
-                      <td className="px-3 py-3">{item.no_action_plan || "-"}</td>
-                      <td className="px-3 py-3">{item.perwakilan_agen || "-"}</td>
-                      <td className="px-3 py-3">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: t.chipSlate.bg, color: t.chipSlate.text, border: `1px solid ${t.chipSlate.border}` }}>
-                          {item.brand || "-"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3">{item.nama_program || "-"}</td>
-                      <td className="px-3 py-3" style={{ color: t.textSub }}>
-                        {formatDate(item.tgl_mulai)} s/d {formatDate(item.tgl_selesai) || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-right font-medium">{formatRupiah(item.total_biaya)}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDetail(item.id);
-                            }}
-                            style={{ background: t.emerald.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
-                          >
-                            <FileText size={20} style={{ marginRight: 2 }} />
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteId(item.id);
-                            }}
-                            style={{ background: t.red.text, color: t.cardbg, border: 'none', borderRadius: 4, padding: '8px 8px', cursor: 'pointer' }}
-                          >
-                            <Trash2 size={20} style={{ marginRight: 2 }} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table
+  theme={theme}
+  data={sortedItems}
+  columns={columns}
+  rowKey={(row) => String(row.id)}
+  sortBy={sortBy}
+  sortOrder={sortOrder}
+  onSort={handleSort}
+/>
           )}
 
           {/* Pagination */}
