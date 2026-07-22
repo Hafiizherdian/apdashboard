@@ -211,7 +211,7 @@ async function apiDelete(id: number) {
 async function apiUpload(file: File, regional: string) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("regional", regional);
+  formData.append("regionalId", regional);
   const res = await fetch("/api/action-plan/upload", { method: "POST", body: formData });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Gagal upload file");
@@ -347,7 +347,7 @@ const handleFileSelect = (file: File) => {
   if (/\.(xlsx|xlsm)$/i.test(file.name)) {
     setSelectedFile(file);
   } else {
-    setUploadError("Format tidak didukung. Gunakan .xlsx atau .xlsm");
+    setUploadError("Format tidak didukung. Gunakan .xlsx");
   }
 };
 
@@ -558,7 +558,7 @@ const sortedItems = [...items].sort((a, b) => {
         <div className="text-sm font-medium" style={{ color: t.text }}>
           {isDragging ? "Lepaskan di sini" : "Drag & drop file di sini, atau klik untuk pilih"}
         </div>
-        <div className="text-xs mt-1" style={{ color: t.textMuted }}>Format .xlsx / .xlsm</div>
+        <div className="text-xs mt-1" style={{ color: t.textMuted }}>Format .xlsx</div>
       </>
     ) : (
       <div className="flex items-center gap-3 text-left">

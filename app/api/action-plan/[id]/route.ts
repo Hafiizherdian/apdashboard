@@ -29,6 +29,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     // Whitelist top-level field yang boleh diterima dari form.
     // Ini menggantikan whitelist lama yang cuma nyakup kolom header.
     const allowedFields = [
+      "regional_id",
       "no_action_plan", "perwakilan_agen", "brand", "nama_program",
       "jenis_program", "lokasi_program", "tgl_mulai", "tgl_selesai",
       "ditujukan_kepada", "lama_program_hari", "total_biaya",

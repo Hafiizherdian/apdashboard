@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const regionalId = formData.get("regionalId") as string | null;   
 
     if (!file) {
       return NextResponse.json(
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     const parsed = await parseActionPlanBuffer(buffer);
-    const id = await createActionPlanFromFile(buffer, file.name);
+    const id = await createActionPlanFromFile(buffer, file.name, regionalId || null);
 
     return NextResponse.json({
       success: true,

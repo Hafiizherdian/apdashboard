@@ -10,6 +10,7 @@ export type ActionPlanStatus = "Running" | "Closed" | "Diperpanjang" | "Dibatalk
 
 export interface ActionPlanListItem {
   id: number;
+  regional_id: string | null;   
   no_action_plan: string | null;
   perwakilan_agen: string | null;
   brand: string | null;
@@ -90,6 +91,7 @@ export interface ActionPlanDetail extends ActionPlanListItem {
 // ---------- Filter (Area / Kategori / Brand / Status) ----------
 
 export interface ActionPlanFilters {
+  regional?: string;
   area?: string;      // -> kolom perwakilan_agen
   kategori?: string;  // -> kolom jenis_program
   brand?: string;     // -> kolom brand
@@ -111,6 +113,11 @@ function buildFilterClause(
   const prefix = tableAlias ? `${tableAlias}.` : "";
   const idCol = tableAlias ? `${tableAlias}.id` : "id";
   const clauses: string[] = [];
+
+  if (filters.regional) {
+    params.push(filters.regional);
+    clauses.push(`${prefix}regional_id = $${params.length}`);
+  }
 
   if (filters.area) {
     params.push(filters.area);
@@ -219,7 +226,7 @@ export async function listActionPlans(opts: {
 
   params.push(limit, offset);
   const dataRes = await pool.query(
-    `SELECT id, no_action_plan, perwakilan_agen, brand, nama_program,
+    `SELECT id, regional_id, no_action_plan, perwakilan_agen, brand, nama_program,
             tgl_mulai, tgl_selesai, total_biaya, created_at, status_override,
             EXISTS (
               SELECT 1 FROM action_plan_perpanjangan pp WHERE pp.action_plan_id = action_plans.id
@@ -233,6 +240,7 @@ export async function listActionPlans(opts: {
 
   const items: ActionPlanListItem[] = dataRes.rows.map((r) => ({
     id: r.id,
+    regional_id: r.regional_id,
     no_action_plan: r.no_action_plan,
     perwakilan_agen: r.perwakilan_agen,
     brand: r.brand,
@@ -416,6 +424,7 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
 
   return {
     id: h.id,
+    regional_id: h.regional_id,
     no_action_plan: h.no_action_plan,
     perwakilan_agen: h.perwakilan_agen,
     brand: h.brand,
@@ -501,7 +510,8 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
 
 export async function createActionPlanFromFile(
   buffer: Buffer,
-  filename: string
+  filename: string,
+  regionalId?: string | null   
 ): Promise<number> {
   const parsed: ActionPlanParsed = await parseActionPlanBuffer(buffer);
   const client = await pool.connect();
@@ -511,14 +521,15 @@ export async function createActionPlanFromFile(
     const h = parsed.header;
     const headerRes = await client.query(
       `INSERT INTO action_plans (
-        no_action_plan, perwakilan_agen, brand, nama_program, jenis_program,
+        regional_id, no_action_plan, perwakilan_agen, brand, nama_program, jenis_program,
         lokasi_program, tgl_mulai, tgl_selesai, ditujukan_kepada, tembusan,
         lama_program_hari, total_biaya, total_biaya_yang_dibutuhkan,
         cost_ratio_percent, source_filename, uraian, latar_belakang, objektif,
         mekanisme, mekanisme_detail, evaluasi_detail, raw_json
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
       RETURNING id`,
       [
+        regionalId ?? null,
         h.noActionPlan ?? null,
         h.perwakilanAgen ?? null,
         h.brand ?? null,
@@ -633,6 +644,7 @@ async function insertChildren(client: PoolClient, id: number, parsed: ActionPlan
 // ---------- Update (edit dari form) ----------
 
 const HEADER_FIELD_MAP: Record<string, string> = {
+  regional_id: "regional_id",
   no_action_plan: "no_action_plan",
   perwakilan_agen: "perwakilan_agen",
   brand: "brand",

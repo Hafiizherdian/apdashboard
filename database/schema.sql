@@ -2,12 +2,16 @@
 -- Schema Action Plan / Trade Promo — disesuaikan penuh dengan
 -- struktur ActionPlanDetail di EntriAP.tsx
 -- psql -U <username> -d <database_name> -f schema_action_plan_full.sql
+-- ALTER TABLE action_plans
+-- ADD COLUMN IF NOT EXISTS regional_id TEXT REFERENCES regionals(id) ON DELETE SET NULL;
+-- CREATE INDEX IF NOT EXISTS idx_action_plans_regional ON action_plans (regional_id);
 -- ============================================================
 
 -- ---------- Tabel utama ----------
 CREATE TABLE IF NOT EXISTS action_plans (
   id                            SERIAL PRIMARY KEY,
   no_action_plan                TEXT,
+  regional_id                   TEXT REFERENCES regionals(id) ON DELETE SET NULL,
   perwakilan_agen                TEXT,
   brand                          TEXT,
   nama_program                  TEXT,

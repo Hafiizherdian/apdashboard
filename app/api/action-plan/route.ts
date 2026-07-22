@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
     const view = searchParams.get("view");
 
+    const regional = searchParams.get("regional")
     const area = searchParams.get("area");
     const kategori = searchParams.get("kategori");
     const brand = searchParams.get("brand");
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const regionalId = formData.get("regionalId") as string | null;   
     if (!file) {
       return NextResponse.json({ error: "File tidak ditemukan." }, { status: 400 });
     }
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const id = await createActionPlanFromFile(buffer, file.name);
+    const id = await createActionPlanFromFile(buffer, file.name, regionalId || null);
 
     return NextResponse.json({ success: true, id }, { status: 201 });
   } catch (err) {
