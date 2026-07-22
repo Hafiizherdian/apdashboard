@@ -1,13 +1,19 @@
 // lib/auth/types.ts
 
 export type UserRole = 'root' | 'admin' | 'user';
+export type ScopeType = 'all' | 'regional' | 'area';
 
 export interface SessionUser {
   id:       string;
   username: string;
   email:    string;
   role:     UserRole;
+  scope_type: ScopeType;
+  // allowed_areas SELALU berisi daftar area id yang SUDAH DIRESOLVE
+  // (kalau scope_type = 'regional', ini hasil ekspansi semua area di regional tsb;
+  //  kalau scope_type = 'all' atau role root/admin, boleh dikosongkan — canAccessArea akan return true).
   allowed_areas: string[]; // Array of area IDs this user can access
+  allowed_regionals: string[];
 }
 
 export interface JWTPayload extends SessionUser {
@@ -51,24 +57,42 @@ export function can(role: UserRole, permission: Permission): boolean {
 
 // ─── Area-based access control utilities ───────────────────────────────
 export function canAccessArea(user: SessionUser, areaId: string): boolean {
-  if (user.role === 'root') return true;
+  if (user.role === 'root' || user.role === 'admin') return true;
+  if (user.scope_type === 'all') return true;
   return user.allowed_areas.includes(areaId);
 }
 
+export function canAccessRegional(user: SessionUser, regionalId: string): boolean {
+  if (user.role === 'root' || user.role === 'admin') return true;
+  if (user.scope_type === 'all') return true;
+  if (user.scope_type === 'regional') return user.allowed_regionals.includes(regionalId);
+  return false; // scope 'area' tidak punya akses tingkat regional
+}
+
 export function getAccessibleAreas(user: SessionUser): string[] {
-  if (user.role === 'root') return []; // Empty array means all areas
+  // Kosong = akses semua (dipakai buat root/admin/scope 'all')
+  if (user.role === 'root' || user.role === 'admin' || user.scope_type === 'all') return [];
   return user.allowed_areas;
 }
 
-export function filterUserAreas(user: SessionUser, allAreas: any[]): any[] {
-  if (user.role === 'root') return allAreas;
-  return allAreas.filter(area => user.allowed_areas.includes(area.id));
+export function filterUserAreas(user: SessionUser, allAreas: { id: string }[]): typeof allAreas {
+  const accessible = getAccessibleAreas(user);
+  if (accessible.length === 0 && (user.role === 'root' || user.role === 'admin' || user.scope_type === 'all')) {
+    return allAreas;
+  }
+  return allAreas.filter(area => accessible.includes(area.id));
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   root:  'Root',
   admin: 'Admin',
   user:  'User',
+};
+
+export const SCOPE_LABELS: Record<ScopeType, string> = {
+  all:      'Semua Regional & Area',
+  regional: 'Regional Tertentu',
+  area:     'Area Tertentu',
 };
 
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: string }> = {
