@@ -131,6 +131,11 @@ interface ActionPlanDetail extends ActionPlanListItem {
   }[];
 }
 
+interface RegionalOpt {
+  id: string;
+  name: string;
+}
+
 const formatRupiah = (n: number | null | undefined) => {
   if (n === null || n === undefined) return "-";
   return `Rp${n.toLocaleString("id-ID")}`;
@@ -203,10 +208,10 @@ async function apiDelete(id: number) {
   if (!res.ok) throw new Error("Gagal menghapus data");
 }
 
-async function apiUpload(file: File, area: string) {
+async function apiUpload(file: File, regional: string) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("area", area);
+  formData.append("regional", regional);
   const res = await fetch("/api/action-plan/upload", { method: "POST", body: formData });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Gagal upload file");
@@ -270,15 +275,15 @@ export default function EntriAP({ theme }: { theme: Theme }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 const [isDragging, setIsDragging] = useState(false);
-const [allAreas, setAllAreas] = useState<AreaConfig[]>([]);
-const [manualArea, setManualArea] = useState("");
+const [allRegionals, setAllRegionals] = useState<RegionalOpt[]>([]);
+const [manualRegional, setManualRegional] = useState("");
 const fileInputRef = useRef<HTMLInputElement>(null);
 
 useEffect(() => {
-  fetch("/api/areas")
+  fetch("/api/regionals")
     .then((res) => res.json())
-    .then((json) => setAllAreas(json?.data?.areas ?? []))
-    .catch((err) => console.error("Gagal ambil area:", err));
+    .then((json) => setAllRegionals(json?.data?.regionals ?? []))
+    .catch((err) => console.error("Gagal ambil regional:", err));
 }, []);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -348,16 +353,16 @@ const handleFileSelect = (file: File) => {
 
 const handleUpload = async () => {
   if (!selectedFile || uploading) return;
-  if (!manualArea) {
+  if (!manualRegional) {
     setUploadError("Pilih regional terlebih dahulu");
     return;
   }
   setUploading(true);
   setUploadError(null);
   try {
-    const newId = await apiUpload(selectedFile, manualArea);
+    const newId = await apiUpload(selectedFile, manualRegional);
     setSelectedFile(null);
-    setManualArea("");
+    setManualRegional("");
     setPage(1);
     await fetchList();
     await openDetail(newId);
@@ -587,42 +592,42 @@ const sortedItems = [...items].sort((a, b) => {
   </div>
   <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm" className="hidden" onChange={onFileChange} />
 
-  <FormGroup label="Regional / Area" theme={theme}>
-    {allAreas.length === 0 ? (
-      <div className="text-xs" style={{ color: t.textMuted }}>Memuat area...</div>
-    ) : (
-      <select
-        value={manualArea}
-        onChange={(e) => setManualArea(e.target.value)}
-        className="w-full px-3 py-2 border rounded-md text-sm outline-none"
-        style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
-      >
-        <option value="">— Pilih regional —</option>
-        {allAreas.map((a) => (
-          <option key={a.id} value={a.id}>{a.name || a.id}</option>
-        ))}
-      </select>
-    )}
-  </FormGroup>
+  <FormGroup label="Regional" theme={theme}>
+  {allRegionals.length === 0 ? (
+    <div className="text-xs" style={{ color: t.textMuted }}>Memuat regional...</div>
+  ) : (
+    <select
+      value={manualRegional}
+      onChange={(e) => setManualRegional(e.target.value)}
+      className="w-full px-3 py-2 border rounded-md text-sm outline-none"
+      style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
+    >
+      <option value="">— Pilih regional —</option>
+      {allRegionals.map((r) => (
+        <option key={r.id} value={r.id}>{r.name || r.id}</option>
+      ))}
+    </select>
+  )}
+</FormGroup>
 
-  <div className="flex justify-end gap-2">
-    <button
-      onClick={() => fileInputRef.current?.click()}
-      className="px-3 py-2 rounded-md text-sm font-medium"
-      style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
-    >
-      {selectedFile ? "Ganti File" : "Pilih File"}
-    </button>
-    <button
-      onClick={handleUpload}
-      disabled={!selectedFile || !manualArea || uploading}
-      className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex items-center gap-2 disabled:opacity-50"
-      style={{ backgroundColor: "#2563eb", border: "none", cursor: (!selectedFile || !manualArea || uploading) ? "not-allowed" : "pointer" }}
-    >
-      {uploading && <Spinner size={14} color="#fff" />}
-      {uploading ? "Mengupload..." : "Upload"}
-    </button>
-  </div>
+<div className="flex justify-end gap-2">
+  <button
+    onClick={() => fileInputRef.current?.click()}
+    className="px-3 py-2 rounded-md text-sm font-medium"
+    style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
+  >
+    {selectedFile ? "Ganti File" : "Pilih File"}
+  </button>
+  <button
+    onClick={handleUpload}
+    disabled={!selectedFile || !manualRegional || uploading}
+    className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+    style={{ backgroundColor: "#2563eb", border: "none", cursor: (!selectedFile || !manualRegional || uploading) ? "not-allowed" : "pointer" }}
+  >
+    {uploading && <Spinner size={14} color="#fff" />}
+    {uploading ? "Mengupload..." : "Upload"}
+  </button>
+</div>
 </div>
 
           {/* Filter */}

@@ -73,8 +73,8 @@ CREATE TRIGGER trg_users_updated_at
 -- Ganti password_hash di bawah ini — generate dengan bcrypt (lihat lib/auth/password.ts)
 -- Contoh ini HANYA placeholder, JANGAN dipakai di production.
 INSERT INTO regionals (id, name, description) VALUES
-  ('jatim-timur', 'Regional Jawa Timur Timur', 'Banyuwangi, Jember, dsb'),
-  ('jatim-barat', 'Regional Jawa Timur Barat', 'Malang, Surabaya, Pasuruan')
+  ('jatim', 'Regional Jawa Timur', 'Banyuwangi, Jember, Surabaya'),
+  ('jabar', 'Regional Jawa Barat', 'Bandung, Bekasi, Bogor')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO areas (id, name, description, regional_id) VALUES
@@ -82,5 +82,6 @@ INSERT INTO areas (id, name, description, regional_id) VALUES
   ('jember',     'Area Jember',     'Wilayah Jember dan sekitarnya',     'jatim'),
   ('surabaya',   'Area Surabaya',   'Wilayah Surabaya Raya',             'jatim'),
   ('malang',     'Area Malang',     'Wilayah Malang Raya',               'jatim'),
-  ('palopo',     'Area Palopo',     'Wilayah Palopo Raya',               'sulawesi')
+  ('pasuruan',   'Area Pasuruan',   'Wilayah Pasuruan Raya',             'jatim'),
+  ('bandung',    'Area Bandung',    'Wilayah Bandung Raya',              'jabar')
 ON CONFLICT (id) DO NOTHING;

@@ -23,28 +23,23 @@ export interface JWTPayload extends SessionUser {
 
 // ─── Permission map ───────────────────────────────────────────────────────────
 export const PERMISSIONS = {
-  // File / data
   upload_file:    ['root', 'admin'],
   delete_file:    ['root', 'admin'],
   view_files:     ['root', 'admin', 'user'],
   preview_file:   ['root', 'admin', 'user'],
 
-  // Stats / dashboard
   view_stats:     ['root', 'admin', 'user'],
 
-  // Area management
-  manage_areas:   ['root'],
-  view_areas:     ['root', 'admin', 'user'],
+  manage_areas:      ['root'],
+  view_areas:        ['root', 'admin', 'user'],
+  manage_regionals:  ['root'],
 
-  // User management
   manage_users:   ['root'],
   view_users:     ['root'],
 
-  // Settings
   run_migration:  ['root'],
   view_settings:  ['root'],
 
-  // Admin panel access
   access_admin_panel: ['root', 'admin'],
   view_all_areas: ['root'],
 } as const satisfies Record<string, UserRole[]>;
@@ -75,7 +70,7 @@ export function getAccessibleAreas(user: SessionUser): string[] {
   return user.allowed_areas;
 }
 
-export function filterUserAreas(user: SessionUser, allAreas: { id: string }[]): typeof allAreas {
+export function filterUserAreas<T extends { id: string }>(user: SessionUser, allAreas: T[]): T[] {
   const accessible = getAccessibleAreas(user);
   if (accessible.length === 0 && (user.role === 'root' || user.role === 'admin' || user.scope_type === 'all')) {
     return allAreas;

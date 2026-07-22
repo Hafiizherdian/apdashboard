@@ -1,12 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { tk, Theme } from './share';
 
-// Regional belum ada sumber datanya di DB — dibiarkan statis dulu
-export const REGIONAL_OPTIONS = [
-  { label: 'Regional A', value: 'Regional-A' },
-  { label: 'Regional B', value: 'Regional-B' },
-];
+interface RegionalOpt {
+  id: string;
+  name: string;
+}
 
 function FilterSelect({ label, accentColor = '#3b82f6', value, onChange, children, theme, fullWidth }: {
   label: string; accentColor?: string; value: string | number;
@@ -50,11 +50,13 @@ export const EMPTY_AP_FILTER_OPTIONS: ActionPlanFilterOptions = {
 
 /**
  * Ubah ActionPlanFilterState jadi URLSearchParams siap-pakai,
- * cuma masukin filter yang bukan "all" (Regional sengaja diskip
- * karena belum ada kolomnya di DB).
+ * cuma masukin filter yang bukan "all".
+ * Catatan: filter `regional` baru dikirim ke API kalau backend
+ * (route /api/action-plan) sudah mendukung filter berdasarkan regional_id.
  */
 export function filterStateToParams(filters: ActionPlanFilterState): Record<string, string> {
   const params: Record<string, string> = {};
+  if (filters.regional !== 'all') params.regional = filters.regional;
   if (filters.area !== 'all') params.area = filters.area;
   if (filters.kategori !== 'all') params.kategori = filters.kategori;
   if (filters.brand !== 'all') params.brand = filters.brand;
@@ -79,6 +81,15 @@ function ActionPlanFilterBar({
   const set = (key: keyof ActionPlanFilterState) =>
     (e: React.ChangeEvent<HTMLSelectElement>) => onChange({ ...value, [key]: e.target.value });
 
+  const [regionalOptions, setRegionalOptions] = useState<RegionalOpt[]>([]);
+
+  useEffect(() => {
+    fetch('/api/regionals')
+      .then((res) => res.json())
+      .then((json) => setRegionalOptions(json?.data?.regionals ?? []))
+      .catch((err) => console.error('Gagal ambil regional:', err));
+  }, []);
+
   return (
     <div style={{ background: t.cardbg, border: `1px solid ${t.borderCard}`, borderRadius: 13, padding: isMobile ? 14 : 20 }}>
       <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: t.textMuted, fontFamily: 'IBM Plex Mono,monospace', textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: isMobile ? 8 : 10 }}>
@@ -87,7 +98,9 @@ function ActionPlanFilterBar({
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, auto)', gap: 8, alignItems: 'center', justifyContent: isMobile ? 'stretch' : 'flex-start' }}>
         <FilterSelect label="Regional" accentColor="#10b981" value={value.regional} onChange={set('regional')} theme={theme} fullWidth={isMobile}>
           <option value="all" style={{ background: t.inputBg }}>Semua Regional</option>
-          {REGIONAL_OPTIONS.map((o) => <option key={o.value} value={o.value} style={{ background: t.inputBg }}>{o.label}</option>)}
+          {regionalOptions.map((r) => (
+            <option key={r.id} value={r.id} style={{ background: t.inputBg }}>{r.name}</option>
+          ))}
         </FilterSelect>
 
         <FilterSelect label="Area" accentColor="#f59e0b" value={value.area} onChange={set('area')} theme={theme} fullWidth={isMobile}>

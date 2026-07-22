@@ -1,3 +1,4 @@
+//api/action-plan/summary/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getActionPlanSummary } from "@/lib/actionPlanRepository";
 import type { ActionPlanStatus } from "@/lib/actionPlanRepository";
@@ -13,11 +14,13 @@ function toStatus(v: string | null): ActionPlanStatus | undefined {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const regional = searchParams.get("regional")
     const area = searchParams.get("area");
     const kategori = searchParams.get("kategori");
     const brand = searchParams.get("brand");
     const status = searchParams.get("status");
     const filters = {
+      regional: regional && regional !== "all" ? regional : undefined,
       area: area && area !== "all" ? area : undefined,
       kategori: kategori && kategori !== "all" ? kategori : undefined,
       brand: brand && brand !== "all" ? brand : undefined,

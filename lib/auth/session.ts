@@ -7,27 +7,26 @@ export const COOKIE_NAME = 'auth_token';
 
 export async function getSession(): Promise<SessionUser | null> {
   try {
-    // Tambahkan await di sini
-    const cookieStore = await cookies(); 
+    const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
-
     if (!token) return null;
-    
+
     const payload = await verifyToken(token);
     if (!payload) return null;
-    
-    return { 
-      id: payload.id, 
-      username: payload.username, 
-      email: payload.email, 
+
+    return {
+      id: payload.id,
+      username: payload.username,
+      email: payload.email,
       role: payload.role,
-      allowed_areas: payload.allowed_areas || []
+      scope_type: payload.scope_type,
+      allowed_areas: payload.allowed_areas || [],
+      allowed_regionals: payload.allowed_regionals || [],
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
-
 
 export async function requireSession(): Promise<SessionUser> {
   const session = await getSession();
@@ -66,7 +65,9 @@ export async function withAuth(
       username: payload.username,
       email: payload.email,
       role: payload.role,
-      allowed_areas: payload.allowed_areas || []
+      scope_type: payload.scope_type,
+      allowed_areas: payload.allowed_areas || [],
+      allowed_regionals: payload.allowed_regionals || [],
     });
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

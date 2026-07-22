@@ -7,13 +7,14 @@ import React, {
 import {
   MapPin, Sun, Moon, X, ChevronLeft, ChevronRight,
   ShieldAlert, ShieldCheck, Shield, Menu,
-  LogOut, Layers,
+  LogOut, Layers, Users,
 } from 'lucide-react';
 
 import { AuthProvider, useAuth } from '@/lib/auth/AuthContext';
 import { ROLE_LABELS, UserRole } from '@/lib/auth/types';
 import { tk, Theme, Tokens, FONT_SANS, FONT_MONO } from '@/components/share';
 import AdminRegional from '@/menu/admin/AdminRegional';
+import AdminUsers from '@/menu/admin/AdminUsers';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -69,6 +70,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 // ─── Admin Guard ──────────────────────────────────────────────────────────────
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, can, loading } = useAuth();
+  const { theme, setTheme, t } = useTheme();
   const [dots, setDots] = useState(0);
 
   useEffect(() => {
@@ -80,8 +82,22 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     if (!loading && !user) window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname);
   }, [user, loading]);
 
+  const ThemeToggleBtn = (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      style={{
+        position: 'fixed', top: 16, right: 16, width: 36, height: 36, borderRadius: 10,
+        background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub, zIndex: 50,
+      }}
+    >
+      {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+    </button>
+  );
+
   if (loading || !user) return (
-    <div style={{ minHeight: '100vh', background: '#07090e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0, fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ minHeight: '100vh', background: t.pagebg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0, fontFamily: FONT_MONO }}>
+      {ThemeToggleBtn}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
         @keyframes sgPulse { 0%,100%{opacity:0.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} }
@@ -100,26 +116,27 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div style={{ textAlign: 'center', animation: 'sgFadeUp 0.5s 0.1s ease both', opacity: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.03em', lineHeight: 1 }}>CGKN</div>
-          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 4 }}>Admin Panel</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: t.text, letterSpacing: '-0.03em', lineHeight: 1 }}>CGKN</div>
+          <div style={{ fontSize: 9, color: t.textMuted, letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 4 }}>Admin Panel</div>
         </div>
         <div style={{ animation: 'sgFadeUp 0.5s 0.2s ease both', opacity: 0, width: 160 }}>
-          <div style={{ height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ height: 2, borderRadius: 2, background: t.border, overflow: 'hidden' }}>
             <div style={{ height: '100%', background: 'linear-gradient(90deg, #1c9706, #4ade80)', borderRadius: 2, animation: 'sgBar 2.5s cubic-bezier(0.4,0,0.2,1) forwards' }}/>
           </div>
         </div>
-        <div style={{ animation: 'sgFadeUp 0.5s 0.3s ease both', opacity: 0, fontSize: 10, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.06em' }}>
-          Memverifikasi sesi{'.' .repeat(dots)}
+        <div style={{ animation: 'sgFadeUp 0.5s 0.3s ease both', opacity: 0, fontSize: 10, color: t.textMuted, letterSpacing: '0.06em' }}>
+          Memverifikasi sesi{'.'.repeat(dots)}
         </div>
       </div>
     </div>
   );
 
   if (!can('access_admin_panel')) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b12', color: '#fff', flexDirection: 'column', gap: 16 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.pagebg, color: t.text, flexDirection: 'column', gap: 16 }}>
+      {ThemeToggleBtn}
       <ShieldAlert size={48} color="#ef4444" />
       <span style={{ fontSize: 16, fontWeight: 600 }}>Akses Ditolak</span>
-      <span style={{ fontSize: 14, opacity: 0.7, textAlign: 'center', maxWidth: 400 }}>Anda tidak memiliki akses ke panel admin.</span>
+      <span style={{ fontSize: 14, color: t.textSub, textAlign: 'center', maxWidth: 400 }}>Anda tidak memiliki akses ke panel admin.</span>
     </div>
   );
 
@@ -150,16 +167,20 @@ const NAV_SECTIONS = [
     section: 'ADMIN',
     items: [
       { id: 'areas', label: 'Management Regional', icon: MapPin, accent: '#0d9488' },
+      { id: 'users', label: 'Manajemen User', icon: Users, accent: '#a855f7' },
     ],
   },
 ];
 
+
 const PERM_MAP: Record<string, string> = {
   areas: 'view_areas',
+  users: 'view_users',
 };
 
 const PAGE_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
   areas: { title: 'Management Regional', subtitle: 'Setup regional/area', icon: MapPin, color: '#0d9488' },
+  users: { title: 'Manajemen User', subtitle: 'Kelola akun dan akses', icon: Users, color: '#a855f7' },
 };
 
 // ─── NavItem ──────────────────────────────────────────────────────────────────
@@ -173,12 +194,12 @@ function NavItem({ label, icon: Icon, active, collapsed, badge: bdg, onClick, ac
   return (
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} title={collapsed ? label : undefined}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, padding: collapsed ? '10px' : '9px 12px 9px 14px', justifyContent: collapsed ? 'center' : 'flex-start', background: active ? `linear-gradient(90deg, ${accent}22 0%, ${accent}08 100%)` : hovered ? 'rgba(255,255,255,0.04)' : 'transparent', border: 'none', borderLeft: active ? `2.5px solid ${accent}` : '2.5px solid transparent', borderRadius: collapsed ? 10 : '0 10px 10px 0', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease', marginBottom: 1, position: 'relative' }}>
-      <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? accent + '22' : lit ? 'rgba(255,255,255,0.06)' : 'transparent', transition: 'background 0.15s' }}>
-        <Icon size={15} color={active ? accent : lit ? 'rgba(255,255,255,0.75)' : t.sidebarText} />
+      <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? accent + '22' : lit ? t.inputbg : 'transparent', transition: 'background 0.15s' }}>
+        <Icon size={15} color={active ? accent : lit ? t.textSub : t.sidebarText} />
       </div>
       {!collapsed && (
         <>
-          <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#fff' : lit ? 'rgba(255,255,255,0.8)' : t.sidebarText, flex: 1, letterSpacing: active ? '-0.01em' : 0 }}>{label}</span>
+          <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? t.text : lit ? t.textSub : t.sidebarText, flex: 1, letterSpacing: active ? '-0.01em' : 0 }}>{label}</span>
           {bdg !== undefined && bdg > 0 && <span style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT_MONO, background: accent, color: '#fff', padding: '1px 7px', borderRadius: 12 }}>{bdg}</span>}
         </>
       )}
@@ -212,18 +233,18 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
 </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: FONT_MONO, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>Admin Panel</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sales Management</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: t.text, fontFamily: FONT_MONO, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>Admin Panel</div>
+              <div style={{ fontSize: 9, color: t.textMuted, fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Plan Management</div>
             </div>
           )}
         </div>
         {!isMobile && (
-          <button onClick={() => setCollapsed(!collapsed)} style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={() => setCollapsed(!collapsed)} style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer', color: t.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         )}
         {isMobile && (
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 7, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: 6, display: 'flex', flexShrink: 0 }}><X size={14} /></button>
+          <button onClick={onClose} style={{ background: t.inputbg, border: `1px solid ${t.border}`, borderRadius: 7, cursor: 'pointer', color: t.textSub, padding: 6, display: 'flex', flexShrink: 0 }}><X size={14} /></button>
         )}
       </div>
 
@@ -235,7 +256,7 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: FONT_MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.username}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: FONT_MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.username}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: ROLE_CFG[user.role].color, fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{ROLE_LABELS[user.role]}</div>
             </div>
           )}
@@ -274,13 +295,12 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           </>
         ) : (
           <>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: FONT_SANS }}>
-              {theme === 'dark' ? <Sun size={13} color="rgba(255,255,255,0.5)" /> : <Moon size={13} color="rgba(255,255,255,0.5)" />}
-              <span style={{ color: 'rgba(255,255,255,0.4)', flex: 1, textAlign: 'left' }}>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', height: 34, borderRadius: 8, background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub }}>
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: FONT_SANS }}>
-              <LogOut size={13} color="#f87171" />
-              <span style={{ color: '#f87171' }}>Logout</span>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: t.inputbg, border: `1px solid ${t.border}`, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: FONT_SANS }}>
+              {theme === 'dark' ? <Sun size={13} color={t.textSub} /> : <Moon size={13} color={t.textSub} />}
+              <span style={{ color: t.textSub, flex: 1, textAlign: 'left' }}>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
             </button>
           </>
         )}
@@ -373,6 +393,7 @@ function DashboardContent() {
 
         <main style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: isMobile ? '14px 12px' : '20px 24px' }}>
           {activeTab === 'areas' && can('view_areas') && <AdminRegional theme={theme} />}
+          {activeTab === 'users' && can('view_users') && <AdminUsers theme={theme} />}
         </main>
 
         <footer style={{ padding: `8px ${isMobile ? 12 : 20}px`, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
