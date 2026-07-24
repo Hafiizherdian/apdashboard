@@ -297,9 +297,42 @@ function DataAP({ theme }: { theme: Theme }) {
             {formatDate(row.mulai)} <span className="mx-1 opacity-50">→</span> {formatDate(row.selesai) || "-"}
           </span>
         </div>
-        <div className="text-sm font-bold">
-          {formatRupiah(row.Totbiaya)}
-        </div>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80"> 
+        <FileText size={14} className="shrink-0" />
+        <span>
+          Anggaran biaya: {formatRupiah(row.Angbiaya)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80"> 
+        <FileText size={14} className="shrink-0" />
+        <span>
+          Anggaran jasa: {formatRupiah(row.jasa)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80"> 
+        <FileText size={14} className="shrink-0" />
+        <span>
+          Anggaran posm: {formatRupiah(row.posm)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80"> 
+        <FileText size={14} className="shrink-0" />
+        <span>
+          Anggaran trial: {formatRupiah(row.trial)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80"> 
+        <FileText size={14} className="shrink-0" />
+        <span>
+          COST RATIO: {row.costratio !== null ? `${(row.costratio * 100).toFixed(2)}%` : "-"}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80">
+        <FileText size={14} className="shrink-0" />
+        <span>
+          Total biaya: {formatRupiah(row.Totbiaya)}
+        </span>
       </div>
 
       {/* ACTIONS: Tombol Detail */}
