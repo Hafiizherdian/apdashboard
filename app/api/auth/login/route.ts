@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const token = await signToken(sessionUser);
   const res = NextResponse.json({ success: true, data: sessionUser });
   res.cookies.set(COOKIE_NAME, token, {
-    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    httpOnly: true, secure: false,
     sameSite: "lax", path: "/", maxAge: 60 * 60 * 8,
   });
   return res;
