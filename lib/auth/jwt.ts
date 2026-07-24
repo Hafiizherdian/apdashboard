@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { JWTPayload, SessionUser } from './types';
 
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'change-this-to-a-long-random-secret-min-32-chars'
+  process.env.JWT_SECRET
 );
 const EXPIRES = '8h';
 

@@ -206,7 +206,7 @@ function CardLogo() {
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
       }}>
-        Sales Data Management
+        Action Plan Management
       </div>
     </div>
   );

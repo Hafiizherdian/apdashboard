@@ -167,6 +167,12 @@ const NAV_SECTIONS = [
     section: 'ADMIN',
     items: [
       { id: 'areas', label: 'Management Regional', icon: MapPin, accent: '#0d9488' },
+      // { id: 'users', label: 'Manajemen User', icon: Users, accent: '#a855f7' },
+    ],
+  },
+  {
+    section: 'ROOT',
+    items: [
       { id: 'users', label: 'Manajemen User', icon: Users, accent: '#a855f7' },
     ],
   },
@@ -179,8 +185,8 @@ const PERM_MAP: Record<string, string> = {
 };
 
 const PAGE_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
-  areas: { title: 'Management Regional', subtitle: 'Setup regional/area', icon: MapPin, color: '#0d9488' },
-  users: { title: 'Manajemen User', subtitle: 'Kelola akun dan akses', icon: Users, color: '#a855f7' },
+  // areas: { title: 'Management Regional', subtitle: 'Setup regional/area', icon: MapPin, color: '#0d9488' },
+  // users: { title: 'Manajemen User', subtitle: 'Kelola akun dan akses', icon: Users, color: '#a855f7' },
 };
 
 // ─── NavItem ──────────────────────────────────────────────────────────────────
@@ -204,7 +210,7 @@ function NavItem({ label, icon: Icon, active, collapsed, badge: bdg, onClick, ac
         </>
       )}
       {collapsed && hovered && (
-        <div style={{ position: 'absolute', left: 'calc(100% + 12px)', top: '50%', transform: 'translateY(-50%)', background: '#1a1f35', color: '#fff', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ position: 'absolute', left: 'calc(100% + 12px)', top: '50%', transform: 'translateY(-50%)', background: t.cardbg, color: t.text, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {label}
           <div style={{ position: 'absolute', right: '100%', top: '50%', transform: 'translateY(-50%)', border: '5px solid transparent', borderRightColor: '#1a1f35' }} />
         </div>
@@ -229,8 +235,8 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
       <div style={{ padding: collapsed ? '14px 0' : '14px 16px', borderBottom: `1px solid ${t.sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10, height: 64, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: 'rgba(28,151,6,0.15)', border: '1px solid rgba(28,151,6,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-  <img src="/logo-cgkn.png" alt="CGKN" style={{ width: 24, height: 24, objectFit: 'contain' }} />
-</div>
+            <img src="/logo-cgkn.png" alt="CGKN" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+          </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden' }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: t.text, fontFamily: FONT_MONO, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>Admin Panel</div>
@@ -270,13 +276,13 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           if (!visible.length) return null;
           return (
             <div key={section} style={{ marginBottom: 18 }}>
-              {!collapsed && <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', padding: '0 16px', marginBottom: 6, textTransform: 'uppercase' }}>{section}</div>}
-              {collapsed && <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '4px 10px 8px' }} />}
+              {!collapsed && <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: '0.14em', color: t.textMuted, padding: '0 16px', marginBottom: 6, textTransform: 'uppercase' }}>{section}</div>}
+              {collapsed && <div style={{ height: 1, background: t.sidebarBorder, margin: '4px 10px 8px' }} />}
               {visible.map(item => (
-  <NavItem key={item.id} label={item.label} icon={item.icon} active={activeTab === item.id} collapsed={collapsed}
-    accent={item.accent}
-    onClick={() => { setActiveTab(item.id); if (isMobile) onClose(); }} />
-))}
+            <NavItem key={item.id} label={item.label} icon={item.icon} active={activeTab === item.id} collapsed={collapsed}
+              accent={item.accent}
+              onClick={() => { setActiveTab(item.id); if (isMobile) onClose(); }} />
+          ))}
             </div>
           );
         })}
@@ -298,9 +304,9 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
             <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', height: 34, borderRadius: 8, background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub }}>
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: t.inputbg, border: `1px solid ${t.border}`, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: FONT_SANS }}>
-              {theme === 'dark' ? <Sun size={13} color={t.textSub} /> : <Moon size={13} color={t.textSub} />}
-              <span style={{ color: t.textSub, flex: 1, textAlign: 'left' }}>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
+            <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: FONT_SANS }}>
+              <LogOut size={13} color="#f87171" />
+              <span style={{ color: '#f87171' }}>Logout</span>
             </button>
           </>
         )}
@@ -389,7 +395,7 @@ function DashboardContent() {
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: sidebarW, transition: 'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)', minWidth: 0, height: '100vh', overflow: 'hidden' }}>
-        <Topbar activeTab={activeTab} onMobileMenuToggle={() => setMobileSidebarOpen(p => !p)} />
+        {/* <Topbar activeTab={activeTab} onMobileMenuToggle={() => setMobileSidebarOpen(p => !p)} /> */}
 
         <main style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: isMobile ? '14px 12px' : '20px 24px' }}>
           {activeTab === 'areas' && can('view_areas') && <AdminRegional theme={theme} />}
@@ -397,7 +403,7 @@ function DashboardContent() {
         </main>
 
         <footer style={{ padding: `8px ${isMobile ? 12 : 20}px`, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: t.textFaint, fontFamily: FONT_MONO }}>Admin · Regional Setup</span>
+          <span style={{ fontSize: 11, color: t.textFaint, fontFamily: FONT_MONO }}>Admin · Action Plan Setup</span>
           <span style={{ fontSize: 11, color: t.textFaint, fontFamily: FONT_MONO }}>v1.0</span>
         </footer>
       </div>

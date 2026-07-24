@@ -114,7 +114,7 @@ export const tk = {
     textSub: '#475569',
     textMuted: '#94a3b8',
     textFaint: '#cbd5e1',
-    sidebarText: 'rgba(255,255,255,0.5)',
+    sidebarText: 'rgba(18, 18, 18, 0.5)',
     
     // Borders
     border: 'rgba(0,0,0,0.07)',

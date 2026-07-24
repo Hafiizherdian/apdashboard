@@ -506,129 +506,129 @@ const sortedItems = [...items].sort((a, b) => {
       {!selectedId && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
-  <h1 className="text-xl font-semibold">Entri Action Plan</h1>
-</div>
-
-<div
-  className="rounded-xl border p-4 flex flex-col gap-3"
-  style={{ borderColor: t.border, backgroundColor: t.cardbg }}
->
-  <span className="text-sm font-semibold" style={{ color: t.text }}>
-    Upload Action Plan (.xlsx)
-  </span>
-
-  {uploadError && (
-    <div className="p-3 rounded-md text-sm border" style={{ backgroundColor: t.red.bg, color: t.red.text, borderColor: t.red.border }}>
-      {uploadError}
-    </div>
-  )}
-
-  <div
-    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-    onDrop={(e) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const f = e.dataTransfer.files[0];
-      if (f) handleFileSelect(f);
-    }}
-    onClick={() => !selectedFile && fileInputRef.current?.click()}
-    style={{
-      border: `2px dashed ${isDragging ? t.blue.border : selectedFile ? t.green.border : t.borderInput}`,
-      borderRadius: 10,
-      padding: selectedFile ? 14 : 26,
-      textAlign: "center",
-      background: isDragging ? t.blue.bg : selectedFile ? t.green.bg : t.inputBg,
-      cursor: selectedFile ? "default" : "pointer",
-      transition: "all 0.2s",
-    }}
-  >
-    {!selectedFile ? (
-      <>
-        <div
-          style={{
-            width: 40, height: 40, borderRadius: 10, margin: "0 auto 8px",
-            background: isDragging ? t.blue.bg : t.inputBg,
-            border: `1.5px dashed ${isDragging ? t.blue.border : t.borderInput}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Upload size={18} color={isDragging ? t.blue.text : t.textMuted} />
-        </div>
-        <div className="text-sm font-medium" style={{ color: t.text }}>
-          {isDragging ? "Lepaskan di sini" : "Drag & drop file di sini, atau klik untuk pilih"}
-        </div>
-        <div className="text-xs mt-1" style={{ color: t.textMuted }}>Format .xlsx</div>
-      </>
-    ) : (
-      <div className="flex items-center gap-3 text-left">
-        <div
-          style={{
-            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-            background: t.green.bg, border: `1px solid ${t.green.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <FileSpreadsheet size={16} color={t.green.text} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate" style={{ color: t.text }}>{selectedFile.name}</div>
-          <div className="text-xs" style={{ color: t.textMuted, fontFamily: FONT_MONO }}>
-            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+  {/* <h1 className="text-xl font-semibold">Entri Action Plan</h1> */}
           </div>
-        </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-          style={{
-            width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
-            background: t.red.bg, border: `1px solid ${t.red.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <X size={12} color={t.red.text} />
-        </button>
-      </div>
-    )}
-  </div>
-  <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm" className="hidden" onChange={onFileChange} />
 
-  <FormGroup label="Regional" theme={theme}>
-  {allRegionals.length === 0 ? (
-    <div className="text-xs" style={{ color: t.textMuted }}>Memuat regional...</div>
-  ) : (
-    <select
-      value={manualRegional}
-      onChange={(e) => setManualRegional(e.target.value)}
-      className="w-full px-3 py-2 border rounded-md text-sm outline-none"
-      style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
-    >
-      <option value="">— Pilih regional —</option>
-      {allRegionals.map((r) => (
-        <option key={r.id} value={r.id}>{r.name || r.id}</option>
-      ))}
-    </select>
-  )}
-</FormGroup>
+          <div
+            className="rounded-xl border p-4 flex flex-col gap-3"
+            style={{ borderColor: t.border, backgroundColor: t.cardbg }}
+          >
+            <span className="text-sm font-semibold" style={{ color: t.text }}>
+              Upload Action Plan (.xlsx)
+            </span>
 
-<div className="flex justify-end gap-2">
-  <button
-    onClick={() => fileInputRef.current?.click()}
-    className="px-3 py-2 rounded-md text-sm font-medium"
-    style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
-  >
-    {selectedFile ? "Ganti File" : "Pilih File"}
-  </button>
-  <button
-    onClick={handleUpload}
-    disabled={!selectedFile || !manualRegional || uploading}
-    className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex items-center gap-2 disabled:opacity-50"
-    style={{ backgroundColor: "#2563eb", border: "none", cursor: (!selectedFile || !manualRegional || uploading) ? "not-allowed" : "pointer" }}
-  >
-    {uploading && <Spinner size={14} color="#fff" />}
-    {uploading ? "Mengupload..." : "Upload"}
-  </button>
-</div>
-</div>
+            {uploadError && (
+              <div className="p-3 rounded-md text-sm border" style={{ backgroundColor: t.red.bg, color: t.red.text, borderColor: t.red.border }}>
+                {uploadError}
+              </div>
+            )}
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const f = e.dataTransfer.files[0];
+                if (f) handleFileSelect(f);
+              }}
+              onClick={() => !selectedFile && fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${isDragging ? t.blue.border : selectedFile ? t.green.border : t.borderInput}`,
+                borderRadius: 10,
+                padding: selectedFile ? 14 : 26,
+                textAlign: "center",
+                background: isDragging ? t.blue.bg : selectedFile ? t.green.bg : t.inputBg,
+                cursor: selectedFile ? "default" : "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {!selectedFile ? (
+                <>
+                  <div
+                    style={{
+                      width: 40, height: 40, borderRadius: 10, margin: "0 auto 8px",
+                      background: isDragging ? t.blue.bg : t.inputBg,
+                      border: `1.5px dashed ${isDragging ? t.blue.border : t.borderInput}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Upload size={18} color={isDragging ? t.blue.text : t.textMuted} />
+                  </div>
+                  <div className="text-sm font-medium" style={{ color: t.text }}>
+                    {isDragging ? "Lepaskan di sini" : "Drag & drop file di sini, atau klik untuk pilih"}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: t.textMuted }}>Format .xlsx</div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 text-left">
+                  <div
+                    style={{
+                      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                      background: t.green.bg, border: `1px solid ${t.green.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <FileSpreadsheet size={16} color={t.green.text} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate" style={{ color: t.text }}>{selectedFile.name}</div>
+                    <div className="text-xs" style={{ color: t.textMuted, fontFamily: FONT_MONO }}>
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                    style={{
+                      width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
+                      background: t.red.bg, border: `1px solid ${t.red.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <X size={12} color={t.red.text} />
+                  </button>
+                </div>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm" className="hidden" onChange={onFileChange} />
+
+            <FormGroup label="Regional" theme={theme}>
+            {allRegionals.length === 0 ? (
+              <div className="text-xs" style={{ color: t.textMuted }}>Memuat regional...</div>
+            ) : (
+              <select
+                value={manualRegional}
+                onChange={(e) => setManualRegional(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md text-sm outline-none"
+                style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
+              >
+                <option value="">— Pilih regional —</option>
+                {allRegionals.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name || r.id}</option>
+                ))}
+              </select>
+            )}
+          </FormGroup>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-2 rounded-md text-sm font-medium"
+              style={{ backgroundColor: t.gray.bg, color: t.text, border: `1px solid ${t.border}` }}
+            >
+              {selectedFile ? "Ganti File" : "Pilih File"}
+            </button>
+            <button
+              onClick={handleUpload}
+              disabled={!selectedFile || !manualRegional || uploading}
+              className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+              style={{ backgroundColor: "#2563eb", border: "none", cursor: (!selectedFile || !manualRegional || uploading) ? "not-allowed" : "pointer" }}
+            >
+              {uploading && <Spinner size={14} color="#fff" />}
+              {uploading ? "Mengupload..." : "Upload"}
+            </button>
+          </div>
+          </div>
 
           {/* Filter */}
           <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />

@@ -32,7 +32,7 @@ export const PERMISSIONS = {
 
   manage_areas:      ['root'],
   view_areas:        ['root', 'admin', 'user'],
-  manage_regionals:  ['root'],
+  manage_regionals:  ['root', 'admin'],
 
   manage_users:   ['root'],
   view_users:     ['root'],
