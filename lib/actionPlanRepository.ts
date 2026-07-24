@@ -945,3 +945,41 @@ export async function getActionPlanSummary(filters?: ActionPlanFilters): Promise
     totalBiaya: Number(r.total_biaya),
   };
 }
+
+// ---------- Jumlah AP per Kategori (buat Overview.tsx) ----------
+
+export interface ActionPlanByKategoriPoint {
+  kategori: string;
+  total: number;
+}
+
+export async function getActionPlanByKategori(
+  filters: ActionPlanFilters | undefined,
+  limit = 10
+): Promise<ActionPlanByKategoriPoint[]> {
+  const params: unknown[] = [];
+  const filterClause = buildFilterClause(filters, params);
+  const whereClause = filterClause ? `WHERE ${filterClause}` : "";
+
+  params.push(Math.min(50, Math.max(1, limit)));
+  const limitIdx = params.length;
+
+  const res = await pool.query(
+    `
+    SELECT
+      COALESCE(NULLIF(TRIM(jenis_program), ''), '(Tanpa Kategori)') AS kategori,
+      COUNT(*)::int AS total
+    FROM action_plans
+    ${whereClause}
+    GROUP BY 1
+    ORDER BY total DESC, kategori ASC
+    LIMIT $${limitIdx}
+    `,
+    params
+  );
+
+  return res.rows.map((r) => ({
+    kategori: r.kategori,
+    total: r.total,
+  }));
+}
