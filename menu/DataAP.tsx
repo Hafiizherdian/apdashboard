@@ -13,6 +13,7 @@ import {
 } from "@/components/Filter";
 import { useCallback, useEffect, useState } from "react";
 import ActionPlanDetailView from "@/components/ActionPlanDetailView";
+import EvaluasiDetailView from "@/components/EvaluasiDetailView";
 
 const GAP = 8;
 
@@ -125,9 +126,11 @@ function DataAP({ theme }: { theme: Theme }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<any>(null);
+  const [detailTab, setDetailTab] = useState<'program' | 'evaluasi'>('program'); 
 
   const openDetail = useCallback(async (row: TableRow) => {
     setDetailOpen(true);
+    setDetailTab('program'); 
     setDetailLoading(true);
     setDetailError(null);
     setDetailData(null);
@@ -369,7 +372,7 @@ function DataAP({ theme }: { theme: Theme }) {
         >
           {/* Header */}
           <div
-            className="shrink-0 flex items-center justify-between gap-3"
+            className="shrink-0 flex items-center justify-between gap-3 flex-wrap"
             style={{ padding: '12px 16px', borderBottom: `1px solid ${t.borderCard}` }}
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -385,6 +388,42 @@ function DataAP({ theme }: { theme: Theme }) {
                 {detailLoading || !detailData ? "Memuat detail..." : (detailData.nama_program || "Detail Action Plan")}
               </span>
             </div>
+
+            {/* Tombol Tab Program / Evaluasi */}
+            {!detailLoading && detailData && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDetailTab('program')}
+                  className="cursor-pointer"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: `1px solid ${detailTab === 'program' ? t.emerald.text : t.border}`,
+                    background: detailTab === 'program' ? t.emerald.bg : 'transparent',
+                    color: detailTab === 'program' ? t.emerald.text : t.textSub,
+                  }}
+                >
+                  Detail Program
+                </button>
+                <button
+                  onClick={() => setDetailTab('evaluasi')}
+                  className="cursor-pointer"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: `1px solid ${detailTab === 'evaluasi' ? t.emerald.text : t.border}`,
+                    background: detailTab === 'evaluasi' ? t.emerald.bg : 'transparent',
+                    color: detailTab === 'evaluasi' ? t.emerald.text : t.textSub,
+                  }}
+                >
+                  Evaluasi
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Body */}
@@ -398,7 +437,11 @@ function DataAP({ theme }: { theme: Theme }) {
               </div>
             )}
             {!detailLoading && !detailError && detailData && (
-              <ActionPlanDetailView detail={detailData} formatRupiah={(v) => formatRupiah(v)} isMobile={isMobile} />
+              detailTab === 'program' ? (
+                <ActionPlanDetailView detail={detailData} formatRupiah={(v) => formatRupiah(v)} isMobile={isMobile} />
+              ) : (
+                <EvaluasiDetailView evaluasi={detailData.evaluasiDetail} formatRupiah={(v) => formatRupiah(v)} isMobile={isMobile} />
+              )
             )}
           </div>
 

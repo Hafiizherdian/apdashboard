@@ -827,6 +827,42 @@ const sortedItems = [...items].sort((a, b) => {
                 )}
               </div>
             </div>
+
+            {/* Tombol Tab Action Plan / Evaluasi */}
+            {!loadingDetail && detail && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDetailPage("ap")}
+                  className="cursor-pointer"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: `1px solid ${detailPage === "ap" ? t.emerald.text : t.border}`,
+                    background: detailPage === "ap" ? t.emerald.bg : 'transparent',
+                    color: detailPage === "ap" ? t.emerald.text : t.textSub,
+                  }}
+                >
+                  Detail Program
+                </button>
+                <button
+                  onClick={() => setDetailPage("evaluasi")}
+                  className="cursor-pointer"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: `1px solid ${detailPage === "evaluasi" ? t.emerald.text : t.border}`,
+                    background: detailPage === "evaluasi" ? t.emerald.bg : 'transparent',
+                    color: detailPage === "evaluasi" ? t.emerald.text : t.textSub,
+                  }}
+                >
+                  Evaluasi
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Section nav */}
@@ -848,30 +884,34 @@ const sortedItems = [...items].sort((a, b) => {
             </div>
           )}
 
-          {/* Scrollable body */}
-         {detailPage === "ap" ? (
-           <ExcelReplicaBody
-             loadingDetail={loadingDetail}
-             detail={detail}
-             saveError={saveError}
-             editForm={editForm}
-             setEditForm={setEditForm}
-             handleTableChange={handleTableChange}
-             formatRupiah={formatRupiah}
-             modalScrollRef={modalScrollRef}
-             isMobile={isMobile}
-           />
-         ) : (
-           <EvaluasiReplicaBody
-             loadingDetail={loadingDetail}
-             detail={detail}
-             editForm={editForm}
-             setEditForm={setEditForm}
-             formatRupiah={formatRupiah}
-             modalScrollRef={modalScrollRef}
-             isMobile={isMobile}
-           />
-         )}
+          <div>
+            {/* Scrollable body */}
+            {!loadingDetail && detail && (
+              detailPage === "ap" ? (
+                <ExcelReplicaBody
+                  loadingDetail={loadingDetail}
+                  detail={detail}
+                  saveError={saveError}
+                  editForm={editForm}
+                  setEditForm={setEditForm}
+                  handleTableChange={handleTableChange}
+                  formatRupiah={formatRupiah}
+                  modalScrollRef={modalScrollRef}
+                  isMobile={isMobile}
+                />
+              ) : (
+                <EvaluasiReplicaBody
+                  loadingDetail={loadingDetail}
+                  detail={detail}
+                  editForm={editForm}
+                  setEditForm={setEditForm}
+                  formatRupiah={formatRupiah}
+                  modalScrollRef={modalScrollRef}
+                  isMobile={isMobile}
+                />
+              )
+            )}
+          </div>
 
           {/* Sticky footer */}
           {!loadingDetail && detail && (
@@ -891,14 +931,6 @@ const sortedItems = [...items].sort((a, b) => {
                 >
                   Kembali
                 </button>
-                <button
-                 onClick={() => setDetailPage((p) => (p === "ap" ? "evaluasi" : "ap"))}
-                 disabled={saving}
-                 className="px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                 style={{ backgroundColor: t.blue.bg, color: t.blue.text, border: `1px solid ${t.blue.border}` }}
-               >
-                 {detailPage === "ap" ? (isMobile ? "Evaluasi →" : "Selanjutnya: Evaluasi →") : "← Kembali ke Action Plan"}
-               </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
