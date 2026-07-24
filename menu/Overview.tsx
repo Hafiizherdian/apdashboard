@@ -279,9 +279,6 @@ function Overview({ theme }: { theme: Theme }) {
       {/* Grid Chart Dinamis — sekarang pakai data asli */}
       <div style={{ display: 'grid', gridTemplateColumns: chartGridCols, gap: GAP }}>
         <Card theme={theme} title="Jumlah AP" sub="Per Kategori" color={t.blue.text} accent={t.blue.text} icon={<Files size={12} color={t.blue.text} />}>
-          <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'IBM Plex Mono, monospace', marginBottom: 12 }}>
-            Jumlah action plan dikelompokkan berdasarkan Kategori.
-          </div>
           <KategoriBarChart theme={theme} data={kategoriData} loading={kategoriLoading} />
         </Card>
 
