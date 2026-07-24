@@ -81,7 +81,7 @@ function KategoriBarChart({ theme, data, loading }: { theme: Theme; data: Katego
                   maxWidth: 44,
                   height: Math.max(barH, 4),
                   borderRadius: '6px 6px 0 0',
-                  background: `linear-gradient(180deg, ${t.blue.text}, ${t.blue.text}77)`,
+                  background: t.blue.text,
                   transition: 'height 0.25s ease',
                 }}
               />
