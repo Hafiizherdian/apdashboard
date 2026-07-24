@@ -497,7 +497,7 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
                 </div>
               )}
 
-              <FormGroup label="ID Area" hint={editingArea ? "ID tidak dapat diubah" : "Contoh: malang, bandung, dsb"} theme={theme}>
+              <FormGroup label="ID Area" hint={editingArea ? "ID tidak dapat diubah" : ""} theme={theme}>
                 <input
                   type="text"
                   value={formId}

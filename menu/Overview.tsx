@@ -272,8 +272,10 @@ function Overview({ theme }: { theme: Theme }) {
         <KpiMini theme={theme} bg={t.card2bg} border={t.card2border} labelColor={t.card2text} label="Running" value={loading ? "..." : String(summary?.totalRunning ?? 0)} sub="Action Plan Berjalan" />
         <KpiMini theme={theme} bg={t.card2bg} border={t.card2border} labelColor={t.card2text} label="Diperpanjang" value={loading ? "..." : String(summary?.totalDiperpanjang ?? 0)} sub="Action Plan Diperpanjang" />
         <KpiMini theme={theme} bg={t.card6bg} border={t.card6border} labelColor={t.card6text} label="Canceled" value={loading ? "..." : String(summary?.totalDibatalkan ?? 0)} sub="Action Plan Canceled" />
-        <KpiMini theme={theme} bg={t.card3bg} border={t.card3border} labelColor={t.card3text} label="Total Biaya" value={loading ? "..." : formatRupiah(summary?.totalBiaya ?? 0)} sub="Total Biaya Keseluruhan" />
         <KpiMini theme={theme} bg={t.card5bg} border={t.card5border} labelColor={t.card5text} label="Realisasi Rate" value={loading ? "..." : `${realisasiRate} %`} sub="Rasio Action Plan Selesai" />
+        <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto', width: '100%', height: '100%' }}>
+        <KpiMini theme={theme} bg={t.card3bg} border={t.card3border} labelColor={t.card3text} label="Total Biaya" value={loading ? "..." : formatRupiah(summary?.totalBiaya ?? 0)} sub="Total Biaya Keseluruhan" />
+        </div>
       </div>
 
       {/* Grid Chart Dinamis — sekarang pakai data asli */}
