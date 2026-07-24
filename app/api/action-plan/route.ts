@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     const brand = searchParams.get("brand");
     const status = searchParams.get("status");
     const filters = {
+      regional: regional && regional !== "all" ? regional : undefined,
       area: area && area !== "all" ? area : undefined,
       kategori: kategori && kategori !== "all" ? kategori : undefined,
       brand: brand && brand !== "all" ? brand : undefined,
