@@ -200,17 +200,17 @@ function NavItem({ label, icon: Icon, active, collapsed, badge: bdg, onClick, ac
   return (
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} title={collapsed ? label : undefined}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, padding: collapsed ? '10px' : '9px 12px 9px 14px', justifyContent: collapsed ? 'center' : 'flex-start', background: active ? `linear-gradient(90deg, ${accent}22 0%, ${accent}08 100%)` : hovered ? 'rgba(255,255,255,0.04)' : 'transparent', border: 'none', borderLeft: active ? `2.5px solid ${accent}` : '2.5px solid transparent', borderRadius: collapsed ? 10 : '0 10px 10px 0', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease', marginBottom: 1, position: 'relative' }}>
-      <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? accent + '22' : lit ? t.inputbg : 'transparent', transition: 'background 0.15s' }}>
-        <Icon size={15} color={active ? accent : lit ? t.textSub : t.sidebarText} />
+      <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? accent + '22' : lit ? 'rgba(255,255,255,0.06)' : 'transparent', transition: 'background 0.15s' }}>
+        <Icon size={15} color={active ? accent : lit ? 'rgba(255,255,255,0.75)' : t.sidebarText} />
       </div>
       {!collapsed && (
         <>
-          <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? t.text : lit ? t.textSub : t.sidebarText, flex: 1, letterSpacing: active ? '-0.01em' : 0 }}>{label}</span>
+          <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#fff' : lit ? 'rgba(255,255,255,0.8)' : t.sidebarText, flex: 1, letterSpacing: active ? '-0.01em' : 0 }}>{label}</span>
           {bdg !== undefined && bdg > 0 && <span style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT_MONO, background: accent, color: '#fff', padding: '1px 7px', borderRadius: 12 }}>{bdg}</span>}
         </>
       )}
       {collapsed && hovered && (
-        <div style={{ position: 'absolute', left: 'calc(100% + 12px)', top: '50%', transform: 'translateY(-50%)', background: t.cardbg, color: t.text, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ position: 'absolute', left: 'calc(100% + 12px)', top: '50%', transform: 'translateY(-50%)', background: '#1a1f35', color: '#fff', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {label}
           <div style={{ position: 'absolute', right: '100%', top: '50%', transform: 'translateY(-50%)', border: '5px solid transparent', borderRightColor: '#1a1f35' }} />
         </div>
@@ -239,18 +239,18 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: t.text, fontFamily: FONT_MONO, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>Admin Panel</div>
-              <div style={{ fontSize: 9, color: t.textMuted, fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Plan Management</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: FONT_MONO, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>Admin Panel</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Plan Management</div>
             </div>
           )}
         </div>
         {!isMobile && (
-          <button onClick={() => setCollapsed(!collapsed)} style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer', color: t.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={() => setCollapsed(!collapsed)} style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         )}
         {isMobile && (
-          <button onClick={onClose} style={{ background: t.inputbg, border: `1px solid ${t.border}`, borderRadius: 7, cursor: 'pointer', color: t.textSub, padding: 6, display: 'flex', flexShrink: 0 }}><X size={14} /></button>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 7, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: 6, display: 'flex', flexShrink: 0 }}><X size={14} /></button>
         )}
       </div>
 
@@ -262,7 +262,7 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: FONT_MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.username}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: FONT_MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.username}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: ROLE_CFG[user.role].color, fontFamily: FONT_MONO, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{ROLE_LABELS[user.role]}</div>
             </div>
           )}
@@ -276,8 +276,8 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           if (!visible.length) return null;
           return (
             <div key={section} style={{ marginBottom: 18 }}>
-              {!collapsed && <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: '0.14em', color: t.textMuted, padding: '0 16px', marginBottom: 6, textTransform: 'uppercase' }}>{section}</div>}
-              {collapsed && <div style={{ height: 1, background: t.sidebarBorder, margin: '4px 10px 8px' }} />}
+              {!collapsed && <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', padding: '0 16px', marginBottom: 6, textTransform: 'uppercase' }}>{section}</div>}
+              {collapsed && <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '4px 10px 8px' }} />}
               {visible.map(item => (
             <NavItem key={item.id} label={item.label} icon={item.icon} active={activeTab === item.id} collapsed={collapsed}
               accent={item.accent}
@@ -301,8 +301,9 @@ function SidebarContent({ activeTab, setActiveTab, collapsed, setCollapsed, can,
           </>
         ) : (
           <>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', height: 34, borderRadius: 8, background: t.inputbg, border: `1px solid ${t.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub }}>
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: FONT_SANS }}>
+              {theme === 'dark' ? <Sun size={13} color="rgba(255,255,255,0.5)" /> : <Moon size={13} color="rgba(255,255,255,0.5)" />}
+              <span style={{ color: 'rgba(255,255,255,0.4)', flex: 1, textAlign: 'left' }}>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
             </button>
             <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: FONT_SANS }}>
               <LogOut size={13} color="#f87171" />
