@@ -8,11 +8,12 @@ export async function listRegionals(): Promise<RegionalRow[]> {
   return res.rows;
 }
 
-export async function createRegional(data: { id: string; name: string; description?: string }) {
-  await pool.query(
-    `INSERT INTO regionals (id, name, description) VALUES ($1,$2,$3)`,
-    [data.id, data.name, data.description ?? null]
+export async function createRegional(data: { name: string; description?: string }): Promise<RegionalRow> {
+  const res = await pool.query(
+    `INSERT INTO regionals (name, description) VALUES ($1,$2) RETURNING id, name, description`,
+    [data.name, data.description ?? null]
   );
+  return res.rows[0];
 }
 
 export async function updateRegional(id: string, data: { name?: string; description?: string }) {
@@ -38,11 +39,12 @@ export async function listAreas(): Promise<AreaRow[]> {
   return res.rows;
 }
 
-export async function createArea(data: { id: string; name: string; description?: string; regional_id?: string | null }) {
-  await pool.query(
-    `INSERT INTO areas (id, name, description, regional_id) VALUES ($1,$2,$3,$4)`,
-    [data.id, data.name, data.description ?? null, data.regional_id ?? null]
+export async function createArea(data: { name: string; description?: string; regional_id?: string | null }): Promise<AreaRow> {
+  const res = await pool.query(
+    `INSERT INTO areas (name, description, regional_id) VALUES ($1,$2,$3) RETURNING id, name, description, regional_id`,
+    [data.name, data.description ?? null, data.regional_id ?? null]
   );
+  return res.rows[0];
 }
 
 export async function updateArea(id: string, data: { name?: string; description?: string; regional_id?: string | null }) {

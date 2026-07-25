@@ -30,7 +30,7 @@ async function apiFetchAreas() {
   return (json?.data?.areas ?? []) as AreaRow[];
 }
 
-async function apiCreateArea(payload: { id: string; name: string; description?: string | null; regional_id?: string | null }) {
+async function apiCreateArea(payload: { name: string; description?: string | null; regional_id?: string | null }) {
   const res = await fetch("/api/areas", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -60,7 +60,7 @@ async function apiDeleteArea(id: string) {
   }
 }
 
-async function apiCreateRegional(payload: { id: string; name: string; description?: string | null }) {
+async function apiCreateRegional(payload: { name: string; description?: string | null }) {
   const res = await fetch("/api/regionals", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -107,7 +107,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<AreaRow | null>(null);
-  const [formId, setFormId] = useState("");
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formRegionalId, setFormRegionalId] = useState("");
@@ -120,7 +119,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
   // ---- State untuk CRUD Regional ----
   const [regionalModalOpen, setRegionalModalOpen] = useState(false);
   const [editingRegional, setEditingRegional] = useState<RegionalOpt | null>(null);
-  const [regFormId, setRegFormId] = useState("");
   const [regFormName, setRegFormName] = useState("");
   const [regFormDescription, setRegFormDescription] = useState("");
   const [regSaving, setRegSaving] = useState(false);
@@ -144,7 +142,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
 
   const openCreateRegionalModal = () => {
     setEditingRegional(null);
-    setRegFormId("");
     setRegFormName("");
     setRegFormDescription("");
     setRegFormError(null);
@@ -153,7 +150,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
 
   const openEditRegionalModal = (regional: RegionalOpt) => {
     setEditingRegional(regional);
-    setRegFormId(regional.id);
     setRegFormName(regional.name || "");
     setRegFormDescription(regional.description || "");
     setRegFormError(null);
@@ -166,8 +162,8 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
   };
 
   const handleRegionalSubmit = async () => {
-    if (!regFormId.trim() || !regFormName.trim()) {
-      setRegFormError("ID dan Nama regional wajib diisi.");
+    if (!regFormName.trim()) {
+      setRegFormError("Nama regional wajib diisi.");
       return;
     }
     setRegSaving(true);
@@ -180,7 +176,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
         });
       } else {
         await apiCreateRegional({
-          id: regFormId,
           name: regFormName,
           description: regFormDescription || null,
         });
@@ -232,7 +227,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
 
   const openCreateModal = () => {
     setEditingArea(null);
-    setFormId("");
     setFormName("");
     setFormDescription("");
     setFormRegionalId("");
@@ -242,7 +236,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
 
   const openEditModal = (area: AreaRow) => {
     setEditingArea(area);
-    setFormId(area.id);
     setFormName(area.name || "");
     setFormDescription(area.description || "");
     setFormRegionalId(area.regional_id || "");
@@ -256,8 +249,8 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!formId.trim() || !formName.trim()) {
-      setFormError("ID dan Nama area wajib diisi.");
+    if (!formName.trim()) {
+      setFormError("Nama area wajib diisi.");
       return;
     }
     setSaving(true);
@@ -271,7 +264,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
         });
       } else {
         await apiCreateArea({
-          id: formId,
           name: formName,
           description: formDescription || null,
           regional_id: formRegionalId || null,
@@ -311,7 +303,7 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
   });
 
   const columns: TableColumn<AreaRow>[] = [
-    { key: "id", label: "ID Area", sortable: true },
+    // { key: "id", label: "ID Area", sortable: true },
     { key: "name", label: "Nama Area", sortable: true },
     {
       key: "regional_name", label: "Regional", sortable: true,
@@ -354,7 +346,7 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
   ];
 
   const regionalColumns: TableColumn<RegionalOpt>[] = [
-    { key: "id", label: "ID Regional", sortable: true },
+    // { key: "id", label: "ID Regional", sortable: true },
     { key: "name", label: "Nama Regional", sortable: true },
     {
       key: "description", label: "Keterangan", sortable: false,
@@ -497,17 +489,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
                 </div>
               )}
 
-              <FormGroup label="ID Area" hint={editingArea ? "ID tidak dapat diubah" : ""} theme={theme}>
-                <input
-                  type="text"
-                  value={formId}
-                  onChange={(e) => setFormId(e.target.value)}
-                  disabled={!!editingArea}
-                  className="w-full px-3 py-2 border rounded-md text-sm outline-none disabled:opacity-60"
-                  style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
-                />
-              </FormGroup>
-
               <FormGroup label="Nama Area" theme={theme}>
                 <input
                   type="text"
@@ -601,17 +582,6 @@ export default function AdminRegional({ theme }: AdminRegionalProps) {
                   {regFormError}
                 </div>
               )}
-
-              <FormGroup label="ID Regional" hint={editingRegional ? "ID tidak dapat diubah" : "Contoh: jatim, jabar, dsb"} theme={theme}>
-                <input
-                  type="text"
-                  value={regFormId}
-                  onChange={(e) => setRegFormId(e.target.value)}
-                  disabled={!!editingRegional}
-                  className="w-full px-3 py-2 border rounded-md text-sm outline-none disabled:opacity-60"
-                  style={{ backgroundColor: t.inputBg, borderColor: t.borderInput, color: t.text }}
-                />
-              </FormGroup>
 
               <FormGroup label="Nama Regional" theme={theme}>
                 <input
