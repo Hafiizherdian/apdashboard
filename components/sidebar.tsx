@@ -34,7 +34,13 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, theme, setT
 }) {
   const t=tk[theme]; 
   const {user,logout}=useAuth();
-  
+
+  // Sidebar halaman utama HARUS ikut theme (putih di light, gelap di dark).
+  // t.sidebarbg sengaja dibuat gelap-konstan di token bersama untuk branding
+  // sidebar admin, jadi di sini kita override lokal supaya tidak ikut-ikutan.
+  const sidebarBg = theme === 'light' ? '#ffffff' : t.sidebarbg;
+  const sidebarBorder = theme === 'light' ? '#e5e7eb' : t.border;
+
   // State untuk deteksi layar mobile
   const [isMobile, setIsMobile] = useState(false);
 
@@ -56,16 +62,16 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, theme, setT
       display: 'flex',
       flexDirection: isMobile ? 'row' : 'column',
       width: isMobile ? '100%' : (collapsed ? 52 : 200),
-      background: t.sidebarbg,
-      borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
-      borderTop: isMobile ? `1px solid ${t.border}` : 'none',
-      transition: 'width 0.2s cubic-bezier(.4,0,.2,1)',
+      background: sidebarBg,
+      borderRight: isMobile ? 'none' : `1px solid ${sidebarBorder}`,
+      borderTop: isMobile ? `1px solid ${sidebarBorder}` : 'none',
+      transition: 'width 0.2s cubic-bezier(.4,0,.2,1), background 0.15s ease',
       overflowX: 'hidden'
     }}>
       
       {/* Header (Logo & Collapse) - Disembunyikan di Mobile */}
       {!isMobile && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:collapsed?'center':'space-between',padding:collapsed?'0':'0 8px 0 12px',borderBottom:`1px solid ${t.border}`,flexShrink:0,minHeight:46}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:collapsed?'center':'space-between',padding:collapsed?'0':'0 8px 0 12px',borderBottom:`1px solid ${sidebarBorder}`,flexShrink:0,minHeight:46}}>
           {collapsed ? (
             <button onClick={()=>setCollapsed(false)} style={{background:'none',border:'none',cursor:'pointer',padding:6,display:'flex'}}>
               <img src="/logo-cgkn.png" alt="CGKN" style={{width:26,height:26,borderRadius:7,objectFit:'contain'}}/>
@@ -145,7 +151,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, theme, setT
 
       {/* Footer (Profile & Settings) - Disembunyikan di Mobile agar bersih */}
       {!isMobile && (
-        <div style={{padding:collapsed?'8px 4px':'8px',borderTop:`1px solid ${t.border}`,flexShrink:0,display:'flex',flexDirection:'column',gap:5,alignItems:collapsed?'center':'stretch'}}>
+        <div style={{padding:collapsed?'8px 4px':'8px',borderTop:`1px solid ${sidebarBorder}`,flexShrink:0,display:'flex',flexDirection:'column',gap:5,alignItems:collapsed?'center':'stretch'}}>
           {collapsed ? (
             <>
               <button onClick={()=>setTheme(theme==='dark'?'light':'dark')} style={{background:'none',border:'none',cursor:'pointer',color:t.textMuted,borderRadius:7,width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center'}}>{theme==='dark'?<Sun size={13}/>:<Moon size={13}/>}</button>
