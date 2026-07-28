@@ -120,7 +120,7 @@ export interface MekanismeSheet {
   subPrograms: MekanismeSubProgram[];
 }
 
-// ---------- Sheet ke-3: EVALUASI ACTION PLAN ----------
+// ---------- Sheet ke-3, varian A: EVALUASI ACTION PLAN (JENIS PROGRAM = ACTIVATION dsb) ----------
 
 export interface EvaluasiEventRow {
   jenisProgram?: string;
@@ -172,6 +172,90 @@ export interface EvaluasiSheet {
   signatures: EvaluasiSignature[];
 }
 
+// ---------- Sheet ke-3, varian B: EVALUASI ACTION PLAN (JENIS PROGRAM = TRADE PROMO) ----------
+
+export interface EvaluasiPencapaianRow {
+  /** Biasanya berisi "0" (placeholder template) atau nama baris, jarang bermakna kecuali baris TOTAL */
+  keterangan?: string;
+  totalTarget?: number;
+  actualTercapai?: number;
+  pencapaianPercent?: number;
+}
+
+export interface EvaluasiSalesRow {
+  /** PENGAJUAN (default, baris pertama tanpa label eksplisit) / REALISASI SALES / DEVIASI */
+  label: string;
+  keterangan?: string;
+  targetSalesBks?: number;
+  potonganPerBks?: number;
+  /** Kolom nominal rupiah di ujung kanan baris, biasanya tidak punya header sendiri */
+  nominal?: number;
+}
+
+export interface EvaluasiWsWeekValue {
+  /** Label minggu asli dari header, mis. "W01 - W04", "W03 - W06", dst — apapun isinya. */
+  label: string;
+  target?: number;
+  actual?: number;
+  /** Selalu dihitung (actual/target), bukan dibaca dari sheet — lihat catatan di extractWsTable. */
+  pencapaianPercent?: number;
+}
+
+export interface EvaluasiWsRow {
+  ws?: string;
+  /** Bisa berisi berapapun grup minggu — 1, 2, 3, dst — tergantung file. */
+  weeks: EvaluasiWsWeekValue[];
+  totalTarget?: number;
+  bonusPerBks?: number;
+  keterangan?: string;
+}
+
+export interface EvaluasiBiayaRow {
+  /** PENGAJUAN / REALISASI / DEVIASI */
+  label: string;
+  biayaPromosi?: number;
+  jasaPerorangan?: number;
+  biayaPosm?: number;
+  trialTaste?: number;
+  totalBiaya?: number;
+}
+
+export interface EvaluasiBiayaBreakdownRow {
+  keterangan?: string;
+  budget?: number;
+  actual?: number;
+  persen?: number;
+}
+
+export interface TradePromoEvaluasiSheet {
+  pencapaianProgram: EvaluasiPencapaianRow[];
+  pencapaianProgramTotal?: EvaluasiPencapaianRow;
+  targetPenjualanTercapaiPercent1?: number;
+
+  salesRows: EvaluasiSalesRow[];
+  targetPenjualanTercapaiPercent2?: number;
+
+  wsRows: EvaluasiWsRow[];
+  wsTotal?: EvaluasiWsRow;
+  targetPenjualanTercapaiPercent3?: number;
+
+  biayaRows: EvaluasiBiayaRow[];
+  totalBiayaTerpakaiPercent?: number;
+
+  biayaPromosiBreakdown: EvaluasiBiayaBreakdownRow[];
+  trialTasteBreakdown: EvaluasiBiayaBreakdownRow[];
+
+  evaluasiProgram: string[];
+  kendala: string[];
+  planSelanjutnya: string[];
+  signatures: EvaluasiSignature[]; 
+}
+
+/** Union hasil parsing sheet Evaluasi, karena layoutnya beda total antara jenis program Activation vs Trade Promo. */
+export type EvaluasiSheetResult =
+  | { kind: "activation"; data: EvaluasiSheet }
+  | { kind: "trade_promo"; data: TradePromoEvaluasiSheet };
+
 export interface ActionPlanParsed {
   header: ActionPlanHeader;
   uraian?: string;
@@ -191,7 +275,7 @@ export interface ActionPlanParsed {
   totalBiayaYangDibutuhkan?: number;
   costRatioPercent?: number;
   mekanismeDetail?: MekanismeSheet | null;
-  evaluasi?: EvaluasiSheet | null;
+  evaluasi?: EvaluasiSheetResult | null;
   rawGrid: (string | number | null)[][];
 }
 
@@ -250,6 +334,56 @@ function findLabelCell(
   }
   return null;
 }
+/** Sama seperti findLabelCell, tapi KHUSUS buat cari section header di sheet Evaluasi.
+ *  Coba EXACT match dulu -- sel judul section (mis. "SAMPLING", "ANGGARAN BIAYA PROMOSI")
+ *  selalu pendek & berdiri sendiri di satu cell. Kalau langsung pakai substring match kayak
+ *  findLabelCell biasa, kata yang sama bisa ke-collide sama kata di TENGAH paragraf
+ *  penjelasan (mis. "...maupun sampling—telah..." di penjelasan Anggaran ikut ke-anggap
+ *  match "SAMPLING"), padahal paragraf itu muncul SEBELUM section aslinya -> section
+ *  row ke-detect salah, geser ke baris yang salah.
+ *  Fallback ke substring cuma buat label yang emang gak akan exact-match (mis. "DIBUAT
+ *  OLEH" vs cell asli "DIBUAT OLEH :"). */
+function findSectionLabelCell(
+  grid: (string | number | null)[][],
+  label: string
+): { row: number; col: number } | null {
+  const target = normalize(label);
+
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (normalize(grid[r][c]) === target) return { row: r + 1, col: c + 1 };
+    }
+  }
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const cellVal = normalize(grid[r][c]);
+      if (cellVal && cellVal.includes(target)) return { row: r + 1, col: c + 1 };
+    }
+  }
+  return null;
+}
+
+/** Sama seperti findLabelCell, tapi mulai pencarian dari baris tertentu (dipakai untuk
+ *  mencari kemunculan KE-2/KE-3 dari sebuah label yang berulang di sheet Trade Promo). */
+function findLabelCellFrom(
+  grid: (string | number | null)[][],
+  fromRow: number,
+  label: string,
+  exact = false
+): { row: number; col: number } | null {
+  const target = normalize(label);
+  for (let r = Math.max(fromRow - 1, 0); r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const cellVal = normalize(grid[r][c]);
+      if (!cellVal) continue;
+      const match = exact ? cellVal === target : cellVal.includes(target);
+      if (match) {
+        return { row: r + 1, col: c + 1 };
+      }
+    }
+  }
+  return null;
+}
 
 /** Cari label di baris tertentu saja (buat disambiguasi tabel yang bersebelahan). */
 function findLabelCellInRow(
@@ -289,6 +423,37 @@ function toNumber(v: unknown): number | undefined {
   if (cleaned === "" || cleaned === "-" || cleaned === ".") return undefined;
   const n = parseFloat(cleaned);
   return isNaN(n) ? undefined : n;
+}
+
+/** True kalau cell berisi nilai error Excel (#DIV/0!, #REF!, #N/A, dst). toNumber() naif akan
+ *  ikut "mengambil" digit yang nyasar di dalam teks error ini (mis. "#DIV/0!" -> 0), jadi
+ *  semua pembacaan angka di sheet Trade Promo (yang banyak #DIV/0! & #REF!) wajib dicek dulu
+ *  lewat toNumberSafe(), bukan toNumber() langsung. */
+function isErrorValue(v: unknown): boolean {
+  return typeof v === "string" && v.trim().startsWith("#");
+}
+
+function toNumberSafe(v: unknown): number | undefined {
+  if (isErrorValue(v)) return undefined;
+  return toNumber(v);
+}
+
+/** Cari angka pertama di sebelah kanan sebuah label pada baris yang sama. */
+function numberRightOfLabel(
+  grid: (string | number | null)[][],
+  row: number,
+  label: string
+): number | undefined {
+  const rowVals = grid[row - 1];
+  if (!rowVals) return undefined;
+  const idx = rowVals.findIndex((v) => normalize(v).includes(normalize(label)));
+  if (idx === -1) return undefined;
+  for (let c = idx + 1; c < rowVals.length; c++) {
+    if (isErrorValue(rowVals[c])) return undefined;
+    const n = toNumber(rowVals[c]);
+    if (n !== undefined) return n;
+  }
+  return undefined;
 }
 
 /** Buat peta { key: kolomIndex0 } dari sebuah baris header.
@@ -1279,7 +1444,7 @@ function extractMekanismeDetail(grid: (string | number | null)[][]): MekanismeSh
   return { judulSheet, noActionPlanRef, deskripsi, subPrograms };
 }
 
-// ---------- SHEET KE-3: EVALUASI ACTION PLAN ----------
+// ---------- SHEET KE-3 (varian A): EVALUASI ACTION PLAN — ACTIVATION dsb ----------
 
 const EVALUASI_SECTIONS = [
   "TARGET UNTUK EVENT ATAU SEJENISNYA",
@@ -1306,7 +1471,7 @@ function isEvaluasiStopRow(rowVals: (string | number | null)[]): boolean {
 function findEvaluasiSectionRows(grid: (string | number | null)[][]): Record<string, number> {
   const rows: Record<string, number> = {};
   for (const label of EVALUASI_SECTIONS) {
-    const pos = findLabelCell(grid, label);
+    const pos = findSectionLabelCell(grid, label);
     if (pos) rows[label] = pos.row;
   }
   return rows;
@@ -1400,6 +1565,7 @@ function collectBulletOrParagraphRows(
   const out: string[] = [];
   for (let r = fromRow; r <= toRow; r++) {
     const rowVals = grid[r - 1];
+    if (!rowVals) continue;
     const firstIdx = rowVals.findIndex((v) => v !== null && v !== "");
     if (firstIdx === -1) continue;
     let cells = rowVals
@@ -1463,13 +1629,33 @@ function extractEvaluasiAnggaran(
   headerRow: number,
   endRow: number
 ): { rows: EvaluasiAnggaranRow[]; nextRow: number } {
-  const colMap = getColumnMap(grid, headerRow, {
-    biayaPromosi: "BIAYA PROMOSI",
-    biayaPosm: ["BIAYA POS M", "BIAYA POSM"],
-    biayaSampling: "BIAYA SAMPLING",
-    totalBiaya: "TOTAL BIAYA",
-  });
-  
+  const headerRowVals = grid[headerRow - 1] ?? [];
+
+  // FIX: sebelumnya getColumnMap ke-collision ke sel judul section "ANGGARAN BIAYA
+  // PROMOSI" sendiri (karena teks itu SECARA SUBSTRING mengandung "BIAYA PROMOSI", dan
+  // posisinya lebih kiri dari header kolom aslinya). Sekarang cari dulu kolom judul
+  // section itu, lalu batasi pencarian kolom data HANYA di sebelah kanannya -- ini
+  // menghilangkan seluruh kelas bug collision-substring tanpa bergantung ke exact-match.
+  const sectionTitleCol = headerRowVals.findIndex((v) => normalize(v) === normalize("ANGGARAN BIAYA PROMOSI"));
+  const searchFrom = sectionTitleCol !== -1 ? sectionTitleCol + 1 : 0;
+
+  const findCol = (labelOrAliases: string | string[]): number | undefined => {
+    const aliases = Array.isArray(labelOrAliases) ? labelOrAliases : [labelOrAliases];
+    const targets = aliases.map(normalize);
+    for (let c = searchFrom; c < headerRowVals.length; c++) {
+      const nv = normalize(headerRowVals[c]);
+      if (nv && targets.some((t) => nv.includes(t))) return c;
+    }
+    return undefined;
+  };
+
+  const colMap: Record<string, number | undefined> = {
+    biayaPromosi: findCol("BIAYA PROMOSI"),
+    biayaPosm: findCol(["BIAYA POS M", "BIAYA POSM"]),
+    biayaSampling: findCol("BIAYA SAMPLING"),
+    totalBiaya: findCol("TOTAL BIAYA"),
+  };
+
   const rows: EvaluasiAnggaranRow[] = [];
   const dataCols = [colMap.biayaPromosi, colMap.biayaPosm, colMap.biayaSampling, colMap.totalBiaya].filter(
     (v): v is number => v !== undefined
@@ -1480,37 +1666,27 @@ function extractEvaluasiAnggaran(
   for (let r = headerRow + 1; r <= endRow; r++) {
     const rowVals = grid[r - 1];
 
-    // FIX 1: Pengecekan stop marker yang lebih kuat.
-    // Jangan hanya cek 'firstFilled', karena sel pertama bisa saja cuma nomor urut ('02').
-    // Cek apakah ADA sel di baris ini yang memuat kata kunci stop.
-    const isStopMarker = rowVals.some(v => {
+    const isStopMarker = rowVals.some((v) => {
       if (!v) return false;
       const n = normalize(v);
-      return EVALUASI_STOP_MARKERS.some(m => n.includes(normalize(m)));
+      return EVALUASI_STOP_MARKERS.some((m) => n.includes(normalize(m)));
     });
     if (isStopMarker) break;
-
-    // FIX 2: HAPUS break logic ("PENGAJUAN" / "REALISASI" / "DEVIASI") di sini.
-    // Tabel anggaran justru WAJIB membaca baris REALISASI dan DEVIASI.
 
     const vals = [colMap.biayaPromosi, colMap.biayaPosm, colMap.biayaSampling, colMap.totalBiaya].map((i) =>
       i !== undefined ? rowVals[i] : null
     );
     const hasData = vals.some((v) => v !== null && v !== "");
-    
+
     if (!hasData) {
-      // Jika kita sudah pernah memasukkan data (seperti baris Pengajuan & Realisasi), 
-      // lalu ketemu baris kosong melompong (tidak ada nominal), berarti tabel sudah habis.
-      if (rows.length > 0) break; 
+      if (rows.length > 0) break;
       continue;
     }
 
-    // FIX 3: Ambil label baris, tapi ABAIKAN sel yang isinya murni angka (seperti '02' atau '03').
-    // Regex ini menyaring string yang hanya berisi angka (termasuk bila ada titik/kurung tutup setelah angka).
     const labelCell = rowVals
       .slice(0, firstDataCol)
       .find((v) => v !== null && v !== "" && !/^\d+[\.\)]?$/.test(String(v).trim()));
-      
+
     const label = labelCell ? String(labelCell).toUpperCase() : rows.length === 0 ? "PENGAJUAN" : "";
 
     rows.push({
@@ -1522,7 +1698,7 @@ function extractEvaluasiAnggaran(
     });
     lastDataRow = r;
   }
-  
+
   return { rows, nextRow: lastDataRow + 1 };
 }
 
@@ -1537,11 +1713,11 @@ function extractEvaluasiSampling(
     hargaBks: ["HARGA/BKS", "HARGA / BKS", "HARGA BKS"],
     nominal: "NOMINAL",
   });
-  
+
   const groups: EvaluasiSamplingGroup[] = [];
   let deviasi: EvaluasiSamplingItemRow | null = null;
   let currentGroup: EvaluasiSamplingGroup | null = null;
-  
+
   let lastDataRow = headerRow;
   let nextRow = headerRow + 1; // Default awal
 
@@ -1563,10 +1739,10 @@ function extractEvaluasiSampling(
     // 1. Deteksi Blok Penjelasan (Break Condition)
     // Gabungkan teks untuk melihat apakah ini adalah paragraf penjelasan yang panjang
     const joinedText = rowVals.filter(v => v !== null && v !== "").join(" ");
-    
+
     // Stop jika ada marker spesifik ATAU jika ada teks panjang yang jelas bukan baris data
     if (
-      joinedText.toUpperCase().includes("BERIKAN PENJELASAN") || 
+      joinedText.toUpperCase().includes("BERIKAN PENJELASAN") ||
       (joinedText.length > 50 && !joinedText.toUpperCase().includes("PENGAJUAN") && !joinedText.toUpperCase().includes("REALISASI"))
     ) {
       nextRow = r; // nextRow langsung di-set ke baris penjelasan ini
@@ -1574,10 +1750,11 @@ function extractEvaluasiSampling(
     }
 
     // 2. Tentukan Label Group atau Deviasi
-    const labelColLimit = colMap.brand !== undefined ? colMap.brand : 1;
-    const labelCandidate = rowVals.slice(0, labelColLimit).find((v) => v !== null && v !== "");
-    // Pastikan uppercase agar aman dari sifat fungsi normalize() bawaan
-    const normLabel = labelCandidate ? String(normalize(labelCandidate)).toUpperCase().trim() : "";
+    const rowTextNorm = normalize(rowVals.filter((v) => v !== null && v !== "").join(" "));
+    let normLabel = "";
+    if (rowTextNorm.includes("DEVIASI")) normLabel = "DEVIASI";
+    else if (rowTextNorm.includes("PENGAJUAN")) normLabel = "PENGAJUAN";
+    else if (rowTextNorm.includes("REALISASI")) normLabel = "REALISASI";
 
     // 3. Cek DEVIASI (Lakukan SEBELUM mengecek kekosongan brandVal)
     if (normLabel.includes("DEVIASI")) {
@@ -1595,13 +1772,19 @@ function extractEvaluasiSampling(
 
     // 5. Masukkan ke Group yang Tepat
     if (normLabel.includes("PENGAJUAN") || normLabel.includes("REALISASI")) {
-      currentGroup = { label: normLabel, items: [] };
-      groups.push(currentGroup);
+      // FIX: cuma bikin group baru kalau label BERUBAH dari group aktif.
+      // Sebelumnya di sini selalu push group baru tiap ketemu teks "PENGAJUAN"/"REALISASI",
+      // padahal teks itu ikut ke-duplikat ke SETIAP baris brand akibat merged cell,
+      // jadi tiap brand kepecah jadi group-nya sendiri-sendiri (1 item per group).
+      if (!currentGroup || currentGroup.label !== normLabel) {
+        currentGroup = { label: normLabel, items: [] };
+        groups.push(currentGroup);
+      }
     } else if (!currentGroup) {
       currentGroup = { label: "PENGAJUAN", items: [] }; // Fallback jika tidak ada label
       groups.push(currentGroup);
     }
-    
+
     currentGroup.items.push(readItem(rowVals));
     lastDataRow = r;
     nextRow = r + 1;
@@ -1616,40 +1799,72 @@ function extractEvaluasiSignatures(
 ): EvaluasiSignature[] {
   const rowVals = grid[headerRow - 1] ?? [];
   const labelCols: number[] = [];
-  
-  // FIX: Hindari duplikasi karena merged cells
-  let lastLabel = ""; 
-  
+
+  let lastLabel = "";
   rowVals.forEach((v, idx) => {
     if (v) {
       const normV = normalize(v);
-      // Jika mengandung kata "OLEH" dan BUKAN pengulangan dari label sebelumnya
       if (normV.includes("OLEH") && normV !== lastLabel) {
         labelCols.push(idx);
-        lastLabel = normV; // Update label terakhir yang dicatat
+        lastLabel = normV;
       }
     }
   });
 
-  return labelCols.map((col, i) => {
+  const signatures: EvaluasiSignature[] = [];
+
+  labelCols.forEach((col, i) => {
     const nextCol = labelCols[i + 1] ?? rowVals.length;
     const label = String(rowVals[col]);
     const tglVal = grid[headerRow]?.[col];
 
-    let nama: string | undefined;
-    let jabatan: string | undefined;
+    // Cari baris nama pertama yang ada isinya di range kolom label ini.
+    let namaRow: number | null = null;
+    let rawEntries: { col: number; value: string }[] = [];
+
     for (let r = headerRow + 2; r <= grid.length; r++) {
-      const val = grid[r - 1]?.slice(col, nextCol).find((v) => v !== null && v !== "");
-      if (val) {
-        if (!nama) nama = String(val);
-        else if (!jabatan) {
-          jabatan = String(val);
-          break;
-        }
+      const entries: { col: number; value: string }[] = [];
+      for (let c = col; c < nextCol; c++) {
+        const v = grid[r - 1]?.[c];
+        if (v !== null && v !== undefined && v !== "") entries.push({ col: c, value: String(v) });
+      }
+      if (entries.length) {
+        namaRow = r;
+        rawEntries = entries;
+        break;
       }
     }
-    return { label, tanggal: tglVal ? String(tglVal) : undefined, nama, jabatan };
+
+    if (!namaRow || !rawEntries.length) {
+      signatures.push({ label, tanggal: tglVal ? String(tglVal) : undefined });
+      return;
+    }
+
+    // FIX: dedup nilai yang berturut-turut sama (hasil duplikasi merged-cell horizontal),
+    // sisakan cuma kemunculan pertama tiap "blok" nama. Tanpa ini, satu nama yang mergenya
+    // lebar bisa kebaca berkali-kali jadi banyak entri signature palsu.
+    const namaEntries: { col: number; value: string }[] = [];
+    for (const entry of rawEntries) {
+      const prev = namaEntries[namaEntries.length - 1];
+      if (!prev || normalize(prev.value) !== normalize(entry.value)) {
+        namaEntries.push(entry);
+      }
+    }
+
+    const jabatanRowVals = grid[namaRow] ?? []; // baris tepat setelah baris nama
+
+    namaEntries.forEach((entry, idx) => {
+      const jabatanVal = jabatanRowVals[entry.col];
+      signatures.push({
+        label,
+        tanggal: idx === 0 && tglVal ? String(tglVal) : undefined,
+        nama: entry.value,
+        jabatan: jabatanVal !== null && jabatanVal !== undefined && jabatanVal !== "" ? String(jabatanVal) : undefined,
+      });
+    });
   });
+
+  return signatures;
 }
 
 function extractEvaluasiSheet(grid: (string | number | null)[][]): EvaluasiSheet | null {
@@ -1709,6 +1924,563 @@ function extractEvaluasiSheet(grid: (string | number | null)[][]): EvaluasiSheet
 
   return { targetEvent, realisasiEvent, penjelasanTargetEvent, anggaran, penjelasanAnggaran, samplingGroups, samplingDeviasi, penjelasanSampling, evaluasiProgram, signatures };
 }
+// ---------- SHEET KE-3 (varian B): EVALUASI ACTION PLAN — TRADE PROMO ----------
+//
+// CATATAN: kolom-kolom di bawah ini diturunkan dari dump teks (tab-padded) contoh file,
+// bukan dari grid ExcelJS asli. Posisi kolom "nominal" tanpa header eksplisit di tabel
+// Sales adalah asumsi awal.
+//
+// FIX (setelah tes di file AP Karawang.xlsx): pola lama pakai `cursor += 5` sebagai
+// tebakan jarak baris kosong setelah baris "Target penjualan tercapai X%" / "Total
+// Biaya terpakai X%". Tebakan itu ternyata gak konsisten antar file — kalau baris
+// kosongnya lebih dikit dari yang diasumsikan, cursor overshoot dan skip anchor
+// section berikutnya ("TOTAL PENCAPAIAN PROGRAM" buat tabel WS, "Biaya Promosi
+// terdiri atas :" buat breakdown), bikin wsRows & biayaPromosiBreakdown jadi kosong
+// padahal datanya ADA di file.
+//
+// Fix-nya: `findPercentAfterLabel` sekarang return row PERSIS tempat label ketemu,
+// jadi cursor bisa di-set row+1 tanpa nebak jarak kosongnya.
+
+/** Cari baris berisi label tertentu (mis. "TARGET PENJUALAN TERCAPAI" / "TOTAL BIAYA
+ *  TERPAKAI"), ambil angka % di sebelah kanannya, DAN return row tempat ketemu.
+ *  Row ini dipakai buat set cursor persis (row + 1), gantiin pola "cursor += N" yang
+ *  cuma tebakan jarak baris kosong. Mengabaikan nilai error (#DIV/0! dsb). */
+function findPercentAfterLabel(
+  grid: (string | number | null)[][],
+  label: string,
+  fromRow: number,
+  toRow: number
+): { value?: number; row?: number } {
+  const target = normalize(label);
+  for (let r = fromRow; r <= toRow && r <= grid.length; r++) {
+    const rowVals = grid[r - 1];
+    if (!rowVals) continue;
+    const idx = rowVals.findIndex((v) => normalize(v).includes(target));
+    if (idx === -1) continue;
+    for (let c = idx + 1; c < rowVals.length; c++) {
+      if (isErrorValue(rowVals[c])) return { value: undefined, row: r };
+      const n = toNumber(rowVals[c]);
+      if (n !== undefined) return { value: n, row: r };
+    }
+    return { value: undefined, row: r };
+  }
+  return {};
+}
+
+/** Tabel "TOTAL PENCAPAIAN PROGRAM" (Keterangan / Total Target / Actual Tercapai / Pencapaian). */
+function extractPencapaianTable(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  gridLen: number
+): { rows: EvaluasiPencapaianRow[]; total?: EvaluasiPencapaianRow; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    keterangan: "KETERANGAN",
+    totalTarget: "TOTAL TARGET",
+    actualTercapai: "ACTUAL TERCAPAI",
+    pencapaian: "PENCAPAIAN",
+  });
+
+  const rows: EvaluasiPencapaianRow[] = [];
+  let total: EvaluasiPencapaianRow | undefined;
+  let nextRow = headerRow + 1;
+  const maxR = Math.min(headerRow + 15, gridLen);
+
+  for (let r = headerRow + 1; r <= maxR; r++) {
+    const rowVals = grid[r - 1];
+    const totalTarget = colMap.totalTarget !== undefined ? toNumberSafe(rowVals[colMap.totalTarget]) : undefined;
+    const actualTercapai =
+      colMap.actualTercapai !== undefined ? toNumberSafe(rowVals[colMap.actualTercapai]) : undefined;
+    const pencapaianPercent =
+      colMap.pencapaian !== undefined ? toNumberSafe(rowVals[colMap.pencapaian]) : undefined;
+    const keteranganRaw = colMap.keterangan !== undefined ? rowVals[colMap.keterangan] : null;
+
+    if (totalTarget === undefined && actualTercapai === undefined && pencapaianPercent === undefined) {
+      nextRow = r;
+      break;
+    }
+
+    const isTotalRow = normalize(keteranganRaw) === "TOTAL";
+    const row: EvaluasiPencapaianRow = {
+      keterangan: keteranganRaw !== null && keteranganRaw !== "" && !isTotalRow ? String(keteranganRaw) : undefined,
+      totalTarget,
+      actualTercapai,
+      pencapaianPercent,
+    };
+
+    nextRow = r + 1;
+    if (isTotalRow) {
+      total = row;
+      break; // baris TOTAL selalu jadi penutup tabel ini
+    }
+    rows.push(row);
+  }
+
+  return { rows, total, nextRow };
+}
+
+/** Tabel mingguan WS (kolom "PENCAPAIAN" muncul 2x: untuk W01-W04 dan W05-W08). */
+interface WsWeekGroupCol {
+  label: string;
+  targetCol?: number;
+  actualCol?: number;
+}
+
+/** Deteksi grup minggu ("Target Wxx-Wyy" / "Actual Wxx-Wyy") dari header secara dinamis —
+ *  gak hardcode "W01"/"W05". Jumlah grup bisa berapa aja, urutan/nama minggu bebas;
+ *  parser cukup ngikutin urutan kolom yang ADA di header file itu sendiri. */
+/** Cari label minggu dari header yang sudah dinormalisasi (mis. "TARGET W01 - W04" -> "W01 - W04"),
+ *  dengan cara STRIP kata kunci prefix-nya (TARGET/ACTUAL) di manapun posisinya, bukan cuma di awal
+ *  string persis. Return null kalau sisanya nggak mengandung pola minggu "Wxx" -- ini penting biar
+ *  kolom lain yang kebetulan mengandung kata "TARGET" (mis. "TOTAL TARGET") nggak ikut ke-anggap
+ *  grup minggu. */
+function extractWeekLabel(normalizedHeader: string, keyword: "TARGET" | "ACTUAL"): string | null {
+  if (!normalizedHeader.includes(keyword)) return null;
+  const rest = normalizedHeader.replace(keyword, "").trim();
+  if (!/W\s?\d+/.test(rest)) return null;
+  return rest.replace(/\s+/g, " ").trim();
+}
+
+/** Deteksi grup minggu ("Target Wxx-Wyy" / "Actual Wxx-Wyy") dari header secara dinamis.
+ *
+ *  FIX: sebelumnya pairing target<->actual dilakukan POSISIONAL (assign actualCol ke grup target
+ *  terdekat sebelumnya di urutan kolom). Itu ternyata gampang meleset -- kolom "Target" ke-detect
+ *  tapi pasangan "Actual"-nya kepasang ke grup yang salah / nggak kepasang sama sekali, tergantung
+ *  urutan & jarak kolom di file (apalagi kalau ada pengaruh merged cell).
+ *
+ *  Sekarang target & actual dicari independen per kolom, lalu dipasangkan lewat KEY LABEL MINGGU
+ *  ("W01-W04" dst), bukan lewat posisi/urutan kolom. Ini kebal terhadap urutan kolom terbalik,
+ *  ada gap, atau kolom target/actual nggak langsung bersebelahan -- selama teks label mingguannya
+ *  konsisten antara header Target & Actual-nya. */
+function detectWsWeekGroups(headerVals: (string | number | null)[]): WsWeekGroupCol[] {
+  const targetCols = new Map<string, number>(); // key (label tanpa spasi) -> kolom PERTAMA ketemu
+  const actualCols = new Map<string, number>();
+  const labelByKey = new Map<string, string>();
+
+  for (let c = 0; c < headerVals.length; c++) {
+    const n = normalize(headerVals[c]);
+    if (!n) continue;
+
+    // "TOTAL TARGET" (atau kolom TOTAL lain) bukan grup minggu -- exclude eksplisit.
+    if (n === "TOTAL TARGET" || n.startsWith("TOTAL ")) continue;
+
+    const targetLabel = extractWeekLabel(n, "TARGET");
+    if (targetLabel) {
+      const key = targetLabel.replace(/\s/g, "");
+      if (!targetCols.has(key)) targetCols.set(key, c);
+      if (!labelByKey.has(key)) labelByKey.set(key, targetLabel);
+      continue;
+    }
+
+    const actualLabel = extractWeekLabel(n, "ACTUAL");
+    if (actualLabel) {
+      const key = actualLabel.replace(/\s/g, "");
+      if (!actualCols.has(key)) actualCols.set(key, c);
+      if (!labelByKey.has(key)) labelByKey.set(key, actualLabel);
+      continue;
+    }
+  }
+
+  const keys = new Set<string>([...targetCols.keys(), ...actualCols.keys()]);
+  const groups: WsWeekGroupCol[] = [];
+  for (const key of keys) {
+    groups.push({
+      label: labelByKey.get(key) ?? key,
+      targetCol: targetCols.get(key),
+      actualCol: actualCols.get(key),
+    });
+  }
+
+  // Urutkan berdasarkan posisi kolom paling kiri (target atau actual, mana yang duluan) biar
+  // urutan output tetap kiri-ke-kanan sesuai file, bukan urutan Set yang nggak terjamin.
+  groups.sort((a, b) => (a.targetCol ?? a.actualCol ?? 0) - (b.targetCol ?? b.actualCol ?? 0));
+
+  return groups;
+}
+
+/** Tabel mingguan WS. Jumlah & nama grup minggu dideteksi dinamis dari header (lihat
+ *  detectWsWeekGroups) — bukan hardcode W01-W04/W05-W08, jadi tetap kepake walau di file
+ *  lain rentang mingguannya beda atau jumlah grupnya lebih dari 2.
+ *
+ *  Kolom "Pencapaian" di sheet SENGAJA tidak dipakai untuk baca nilai — di beberapa file
+ *  kolom itu kena merged-cell sehingga index-nya gak reliable (nilai bisa ke-duplikat ke
+ *  kolom yang salah). Pencapaian dihitung manual (actual/target), yang selalu akurat
+ *  selama actual & target-nya sendiri kebaca benar. */
+function extractWsTable(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  gridLen: number
+): { rows: EvaluasiWsRow[]; total?: EvaluasiWsRow; nextRow: number } {
+  const headerVals = grid[headerRow - 1] ?? [];
+  const weekGroups = detectWsWeekGroups(headerVals);
+
+  const findFirstCol = (label: string) => {
+    const idx = headerVals.findIndex((v) => normalize(v).includes(normalize(label)));
+    return idx === -1 ? undefined : idx;
+  };
+
+  const wsCol = findFirstCol("WS");
+  const totalTargetCol = (() => {
+    const idx = headerVals.findIndex((v) => normalize(v) === "TOTAL TARGET");
+    return idx === -1 ? undefined : idx;
+  })();
+  const bonusCol = findFirstCol("BONUS");
+  const ketCol = findFirstCol("KET");
+
+  // Batas kiri buat nyari label "TOTAL" — cek semua kolom sebelum grup minggu pertama,
+  // bukan cuma kolom WS, karena label TOTAL bisa nongol di kolom manapun tergantung merge.
+  const firstDataCol = (weekGroups[0]?.targetCol ?? weekGroups[0]?.actualCol) ?? (wsCol ?? 0);
+
+  const rows: EvaluasiWsRow[] = [];
+  let total: EvaluasiWsRow | undefined;
+  let nextRow = headerRow + 1;
+  const maxR = Math.min(headerRow + 15, gridLen);
+
+  for (let r = headerRow + 1; r <= maxR; r++) {
+    const rowVals = grid[r - 1];
+
+    const weeks: EvaluasiWsWeekValue[] = weekGroups.map((g) => {
+      const target = g.targetCol !== undefined ? toNumberSafe(rowVals[g.targetCol]) : undefined;
+      const actual = g.actualCol !== undefined ? toNumberSafe(rowVals[g.actualCol]) : undefined;
+      const pencapaianPercent =
+        target !== undefined && target !== 0 && actual !== undefined ? actual / target : undefined;
+      return { label: g.label, target, actual, pencapaianPercent };
+    });
+
+    const totalTarget = totalTargetCol !== undefined ? toNumberSafe(rowVals[totalTargetCol]) : undefined;
+    const bonusPerBks = bonusCol !== undefined ? toNumberSafe(rowVals[bonusCol]) : undefined;
+
+    const hasAnyData =
+      weeks.some((w) => w.target !== undefined || w.actual !== undefined) ||
+      totalTarget !== undefined ||
+      bonusPerBks !== undefined;
+
+    if (!hasAnyData) {
+      nextRow = r;
+      break;
+    }
+
+    const labelArea = rowVals.slice(0, Math.max(firstDataCol, 1));
+    const isTotalRow = labelArea.some((v) => normalize(v) === "TOTAL");
+
+    const wsRaw = wsCol !== undefined ? rowVals[wsCol] : null;
+    const row: EvaluasiWsRow = {
+      ws: wsRaw !== null && wsRaw !== "" && !isTotalRow ? String(wsRaw) : undefined,
+      weeks,
+      totalTarget,
+      bonusPerBks,
+      keterangan: ketCol !== undefined && rowVals[ketCol] ? String(rowVals[ketCol]) : undefined,
+    };
+
+    nextRow = r + 1;
+    if (isTotalRow) {
+      total = row;
+      break;
+    }
+    rows.push(row);
+  }
+
+  return { rows, total, nextRow };
+}
+
+/** Tabel Section "01": Target Sales (Bks) / Potongan per Bks, baris Pengajuan(implisit)/Realisasi/Deviasi. */
+function extractSalesTable(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  gridLen: number
+): { rows: EvaluasiSalesRow[]; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    keterangan: "KETERANGAN",
+    targetSales: "TARGET SALES",
+    potongan: "POTONGAN",
+  });
+
+  const rows: EvaluasiSalesRow[] = [];
+  let nextRow = headerRow + 1;
+  const maxR = Math.min(headerRow + 10, gridLen);
+
+  for (let r = headerRow + 1; r <= maxR; r++) {
+    const rowVals = grid[r - 1];
+    const targetSalesBks = colMap.targetSales !== undefined ? toNumberSafe(rowVals[colMap.targetSales]) : undefined;
+    const potonganPerBks = colMap.potongan !== undefined ? toNumberSafe(rowVals[colMap.potongan]) : undefined;
+
+    // "nominal": angka paling kanan di baris (biasanya hasil kali/total tanpa header sendiri).
+    let nominal: number | undefined;
+    const rightBound = colMap.potongan !== undefined ? colMap.potongan : 0;
+    for (let c = rowVals.length - 1; c > rightBound; c--) {
+      const n = toNumberSafe(rowVals[c]);
+      if (n !== undefined) {
+        nominal = n;
+        break;
+      }
+    }
+
+    if (targetSalesBks === undefined && potonganPerBks === undefined && nominal === undefined) {
+      nextRow = r;
+      break;
+    }
+
+    const labelRaw = colMap.keterangan !== undefined ? rowVals[colMap.keterangan] : null;
+    const isNumericPlaceholder = labelRaw !== null && /^-?\d+(\.\d+)?$/.test(String(labelRaw).trim());
+    const label =
+      labelRaw && !isNumericPlaceholder
+        ? String(labelRaw).trim().toUpperCase()
+        : rows.length === 0
+        ? "PENGAJUAN"
+        : "";
+
+    rows.push({ label, keterangan: label || undefined, targetSalesBks, potonganPerBks, nominal });
+    nextRow = r + 1;
+  }
+
+  return { rows, nextRow };
+}
+
+/** Tabel Section "02" (kedua): Biaya Pengajuan/Realisasi/Deviasi. */
+function extractBiayaTable(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  gridLen: number
+): { rows: EvaluasiBiayaRow[]; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    keterangan: "KETERANGAN",
+    biayaPromosi: "BIAYA PROMOSI",
+    jasaPerorangan: "JASA PERORANGAN",
+    biayaPosm: "BIAYA POSM",
+    trialTaste: "TRIAL TASTE",
+    totalBiaya: "TOTAL BIAYA",
+  });
+
+  const rows: EvaluasiBiayaRow[] = [];
+  let nextRow = headerRow + 1;
+  const maxR = Math.min(headerRow + 10, gridLen);
+
+  for (let r = headerRow + 1; r <= maxR; r++) {
+    const rowVals = grid[r - 1];
+    const biayaPromosi = colMap.biayaPromosi !== undefined ? toNumberSafe(rowVals[colMap.biayaPromosi]) : undefined;
+    const jasaPerorangan =
+      colMap.jasaPerorangan !== undefined ? toNumberSafe(rowVals[colMap.jasaPerorangan]) : undefined;
+    const biayaPosm = colMap.biayaPosm !== undefined ? toNumberSafe(rowVals[colMap.biayaPosm]) : undefined;
+    const trialTaste = colMap.trialTaste !== undefined ? toNumberSafe(rowVals[colMap.trialTaste]) : undefined;
+    const totalBiaya = colMap.totalBiaya !== undefined ? toNumberSafe(rowVals[colMap.totalBiaya]) : undefined;
+
+    if ([biayaPromosi, jasaPerorangan, biayaPosm, trialTaste, totalBiaya].every((v) => v === undefined)) {
+      nextRow = r;
+      break;
+    }
+
+    const labelRaw = colMap.keterangan !== undefined ? rowVals[colMap.keterangan] : null;
+    const label = labelRaw ? String(labelRaw).trim().toUpperCase() : rows.length === 0 ? "PENGAJUAN" : "";
+
+    rows.push({ label, biayaPromosi, jasaPerorangan, biayaPosm, trialTaste, totalBiaya });
+    nextRow = r + 1;
+  }
+
+  return { rows, nextRow };
+}
+
+/** Tabel breakdown "... terdiri atas :" (Keterangan / Budget (Rp) / Actual (Rp) / %), dipakai
+ *  dua kali (Biaya Promosi & Trial Taste), ditutup oleh baris "Total ...". */
+function extractBiayaBreakdownTable(
+  grid: (string | number | null)[][],
+  headerRow: number,
+  gridLen: number
+): { rows: EvaluasiBiayaBreakdownRow[]; totalLabel?: string; nextRow: number } {
+  const colMap = getColumnMap(grid, headerRow, {
+    keterangan: "KETERANGAN",
+    budget: "BUDGET",
+    actual: "ACTUAL",
+    persen: "%",
+  });
+
+  const rows: EvaluasiBiayaBreakdownRow[] = [];
+  let totalLabel: string | undefined;
+  let nextRow = headerRow + 1;
+  const maxR = Math.min(headerRow + 15, gridLen);
+
+  for (let r = headerRow + 1; r <= maxR; r++) {
+    const rowVals = grid[r - 1];
+    const budget = colMap.budget !== undefined ? toNumberSafe(rowVals[colMap.budget]) : undefined;
+    const actual = colMap.actual !== undefined ? toNumberSafe(rowVals[colMap.actual]) : undefined;
+    const persen = colMap.persen !== undefined ? toNumberSafe(rowVals[colMap.persen]) : undefined;
+    const keteranganRaw = colMap.keterangan !== undefined ? rowVals[colMap.keterangan] : null;
+
+    if (budget === undefined && actual === undefined && persen === undefined) {
+      nextRow = r;
+      break;
+    }
+
+    const isTotalRow = normalize(keteranganRaw).startsWith("TOTAL");
+    nextRow = r + 1;
+    if (isTotalRow) {
+      totalLabel = keteranganRaw ? String(keteranganRaw).trim() : undefined;
+      break; // baris Total menutup tabel breakdown ini
+    }
+
+    rows.push({
+      keterangan: keteranganRaw ? String(keteranganRaw).trim() : undefined,
+      budget,
+      actual,
+      persen,
+    });
+  }
+
+  return { rows, totalLabel, nextRow };
+}
+
+function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): TradePromoEvaluasiSheet | null {
+  const gridLen = grid.length;
+  const pencapaianPos = findLabelCell(grid, "TOTAL PENCAPAIAN PROGRAM");
+  if (!pencapaianPos) return null;
+
+  // --- Tabel pencapaian program (atas) ---
+  const pencapaianHeaderPos = findLabelCellFrom(grid, pencapaianPos.row + 1, "KETERANGAN", true);
+  let pencapaianProgram: EvaluasiPencapaianRow[] = [];
+  let pencapaianProgramTotal: EvaluasiPencapaianRow | undefined;
+  let cursor = pencapaianPos.row + 1;
+  if (pencapaianHeaderPos) {
+    const res = extractPencapaianTable(grid, pencapaianHeaderPos.row, gridLen);
+    pencapaianProgram = res.rows;
+    pencapaianProgramTotal = res.total;
+    cursor = res.nextRow;
+  }
+
+  // FIX: pakai row hasil ketemu, bukan cursor += 5 (tebakan jarak).
+  const tpt1 = findPercentAfterLabel(grid, "TARGET PENJUALAN TERCAPAI", cursor, cursor + 5);
+  const targetPenjualanTercapaiPercent1 = tpt1.value;
+  cursor = tpt1.row ? tpt1.row + 1 : cursor;
+
+  // --- Section "01": Target Sales / Realisasi Sales / Deviasi ---
+  let salesRows: EvaluasiSalesRow[] = [];
+  let targetPenjualanTercapaiPercent2: number | undefined;
+  const salesHeaderPos = findLabelCellFrom(grid, cursor, "KETERANGAN", true);
+  if (salesHeaderPos) {
+    const res = extractSalesTable(grid, salesHeaderPos.row, gridLen);
+    salesRows = res.rows;
+    cursor = res.nextRow;
+    const tpt2 = findPercentAfterLabel(grid, "TARGET PENJUALAN TERCAPAI", cursor, cursor + 5);
+    targetPenjualanTercapaiPercent2 = tpt2.value;
+    // fallback +1 (bukan +5) kalau marker gak ketemu, biar gak overshoot
+    cursor = tpt2.row ? tpt2.row + 1 : cursor + 1;
+  }
+
+  // --- Section "02" (pertama): tabel WS mingguan ---
+  const wsPencapaianPos = findLabelCellFrom(grid, cursor, "TOTAL PENCAPAIAN PROGRAM");
+  let wsRows: EvaluasiWsRow[] = [];
+  let wsTotal: EvaluasiWsRow | undefined;
+  let targetPenjualanTercapaiPercent3: number | undefined;
+  if (wsPencapaianPos) {
+    const wsHeaderPos = findLabelCellFrom(grid, wsPencapaianPos.row + 1, "WS", true);
+    if (wsHeaderPos) {
+      const res = extractWsTable(grid, wsHeaderPos.row, gridLen);
+      wsRows = res.rows;
+      wsTotal = res.total;
+      cursor = res.nextRow;
+      const tpt3 = findPercentAfterLabel(grid, "TARGET PENJUALAN TERCAPAI", cursor, cursor + 5);
+      targetPenjualanTercapaiPercent3 = tpt3.value;
+      cursor = tpt3.row ? tpt3.row + 1 : cursor + 1;
+    }
+  }
+
+  // --- Section "02" (kedua): tabel Biaya Pengajuan/Realisasi/Deviasi ---
+  let biayaRows: EvaluasiBiayaRow[] = [];
+  let totalBiayaTerpakaiPercent: number | undefined;
+  const biayaHeaderPos = findLabelCellFrom(grid, cursor, "BIAYA PROMOSI");
+  if (biayaHeaderPos) {
+    const res = extractBiayaTable(grid, biayaHeaderPos.row, gridLen);
+    biayaRows = res.rows;
+    cursor = res.nextRow;
+    const tbt = findPercentAfterLabel(grid, "TOTAL BIAYA TERPAKAI", cursor, cursor + 5);
+    totalBiayaTerpakaiPercent = tbt.value;
+    cursor = tbt.row ? tbt.row + 1 : cursor + 1;
+  }
+
+  // --- Breakdown "Biaya Promosi terdiri atas :" ---
+  let biayaPromosiBreakdown: EvaluasiBiayaBreakdownRow[] = [];
+  const biayaBreakdownAnchor = findLabelCellFrom(grid, cursor, "BIAYA PROMOSI TERDIRI ATAS");
+  if (biayaBreakdownAnchor) {
+    const headerPos = findLabelCellFrom(grid, biayaBreakdownAnchor.row + 1, "KETERANGAN", true);
+    if (headerPos) {
+      const res = extractBiayaBreakdownTable(grid, headerPos.row, gridLen);
+      biayaPromosiBreakdown = res.rows;
+      cursor = res.nextRow;
+    }
+  }
+
+  // --- Breakdown kedua (mis. "Bonus Rokok" / "Trial Taste terdiri atas :") ---
+  // Labelnya kadang beda-beda antar file ("Trial Taste terdiri atas", "Bonus Rokok",
+  // bahkan rusak jadi "#REF!"), jadi dideteksi lewat header tabel berikutnya
+  // ("Keterangan | Budget (Rp) | Actual (Rp) | %"), bukan lewat teks labelnya.
+  let trialTasteBreakdown: EvaluasiBiayaBreakdownRow[] = [];
+  const trialTasteHeaderPos = findLabelCellFrom(grid, cursor, "KETERANGAN", true);
+  if (trialTasteHeaderPos) {
+    const res = extractBiayaBreakdownTable(grid, trialTasteHeaderPos.row, gridLen);
+    trialTasteBreakdown = res.rows;
+    cursor = res.nextRow;
+  }
+
+  // --- Section "03": EVALUASI PROGRAM / Kendala / Plan selanjutnya ---
+  let evaluasiProgram: string[] = [];
+  let kendala: string[] = [];
+  let planSelanjutnya: string[] = [];
+  let dibuatOlehPos: { row: number; col: number } | null = null;
+
+  const evalPos = findLabelCellFrom(grid, cursor, "EVALUASI PROGRAM");
+  if (evalPos) {
+    const kendalaPos = findLabelCellFrom(grid, evalPos.row + 1, "KENDALA");
+    const planPos = findLabelCellFrom(grid, kendalaPos ? kendalaPos.row + 1 : evalPos.row + 1, "PLAN SELANJUTNYA");
+
+    // FIX: cari batas "DIBUAT OLEH" LEBIH DULU, supaya Plan Selanjutnya bisa dipagari
+    // sebelum blok tanda tangan (nama/jabatan/tanggal) ikut ke-baca sebagai poin plan.
+    dibuatOlehPos = findLabelCellFrom(grid, planPos ? planPos.row + 1 : evalPos.row + 1, "DIBUAT OLEH");
+
+    const evalEnd = (kendalaPos?.row ?? planPos?.row ?? gridLen + 1) - 1;
+    evaluasiProgram = collectBulletOrParagraphRows(grid, evalPos.row + 1, evalEnd);
+
+    if (kendalaPos) {
+      const kendalaEnd = (planPos?.row ?? gridLen + 1) - 1;
+      kendala = collectBulletOrParagraphRows(grid, kendalaPos.row + 1, kendalaEnd);
+    }
+    if (planPos) {
+      const planEnd = (dibuatOlehPos?.row ?? gridLen + 1) - 1; // <-- FIX UTAMA
+      planSelanjutnya = collectBulletOrParagraphRows(grid, planPos.row + 1, planEnd);
+    }
+  } else {
+    dibuatOlehPos = findLabelCellFrom(grid, cursor, "DIBUAT OLEH");
+  }
+
+  const signatures = dibuatOlehPos ? extractEvaluasiSignatures(grid, dibuatOlehPos.row) : [];
+
+  return {
+    pencapaianProgram,
+    pencapaianProgramTotal,
+    targetPenjualanTercapaiPercent1,
+    salesRows,
+    targetPenjualanTercapaiPercent2,
+    wsRows,
+    wsTotal,
+    targetPenjualanTercapaiPercent3,
+    biayaRows,
+    totalBiayaTerpakaiPercent,
+    biayaPromosiBreakdown,
+    trialTasteBreakdown,
+    evaluasiProgram,
+    kendala,
+    planSelanjutnya,
+    signatures
+  };
+}
+
+// ---------- SHEET KE-3: dispatcher varian A (Activation) vs varian B (Trade Promo) ----------
+
+function extractEvaluasiSheetAny(grid: (string | number | null)[][]): EvaluasiSheetResult | null {
+  const activation = extractEvaluasiSheet(grid);
+  if (activation) return { kind: "activation", data: activation };
+
+  const tradePromo = extractTradePromoEvaluasiSheet(grid);
+  if (tradePromo) return { kind: "trade_promo", data: tradePromo };
+
+  return null;
+}
 
 // ---------- Main entry point ----------
 
@@ -1765,12 +2537,12 @@ export async function parseActionPlanBuffer(
     }
   }
 
-  // --- Sheet ke-3: EVALUASI ACTION PLAN ---
-  let evaluasi: EvaluasiSheet | null = null;
+  // --- Sheet ke-3: EVALUASI ACTION PLAN (Activation ATAU Trade Promo) ---
+  let evaluasi: EvaluasiSheetResult | null = null;
   if (sheet3) {
     try {
       const grid3 = sheetToGrid(sheet3);
-      evaluasi = extractEvaluasiSheet(grid3);
+      evaluasi = extractEvaluasiSheetAny(grid3);
     } catch (err) {
       console.error("Gagal parsing sheet ke-3 (evaluasi):", err);
       evaluasi = null;
