@@ -3,9 +3,10 @@
 import React from "react";
 import type {
   EvaluasiSheet,
+  EvaluasiSheetResult,
+  TradePromoEvaluasiSheet,
   EvaluasiEventRow,
   EvaluasiAnggaranRow,
-  EvaluasiSamplingGroup,
   EvaluasiSamplingItemRow,
   EvaluasiSignature,
 } from "@/lib/parseActionsPlan";
@@ -20,6 +21,9 @@ import {
   MobileDateInput,
   MobileFormField,
 } from "@/components/Responsivecardtable";
+import TradePromoEvaluasiEditable, {
+  EMPTY_TRADE_PROMO_EVALUASI,
+} from "@/components/evaluasiTradePromoReplica";
 
 const C = {
   yellow: "#FFFF99",
@@ -232,7 +236,7 @@ function EditableNumberedList({ items, onChange }: { items: string[]; onChange: 
 }
 
 // ============================================================
-// KOMPONEN UTAMA
+// KOMPONEN UTAMA — DISPATCHER (Activation vs Trade Promo)
 // ============================================================
 export default function EvaluasiReplicaBody({
   loadingDetail,
@@ -251,10 +255,52 @@ export default function EvaluasiReplicaBody({
     );
   }
 
-  const ev: EvaluasiSheet = editForm.evaluasiDetail ?? EMPTY_EVALUASI;
+  // `editForm.evaluasiDetail` sekarang berupa union { kind, data } (lihat EvaluasiSheetResult
+  // di lib/parseActionsPlan.ts), bukan EvaluasiSheet flat lagi. Data lama (sebelum union ini
+  // ada) kemungkinan tersimpan tanpa properti `kind` sama sekali -- anggap itu varian
+  // Activation supaya tetap kompatibel ke belakang.
+  const evResult: EvaluasiSheetResult | null | undefined = editForm.evaluasiDetail;
+  const kind: "activation" | "trade_promo" = evResult && "kind" in evResult ? evResult.kind : "activation";
+
+  const headerLabel = (
+    <div style={{ padding: "10px 12px 0", fontSize: 13, color: "#555" }}>
+      Evaluasi untuk: <strong>{detail.nama_program || editForm.nama_program || "-"}</strong> ({detail.no_action_plan || editForm.no_action_plan || "-"})
+    </div>
+  );
+
+  if (kind === "trade_promo") {
+    const tp: TradePromoEvaluasiSheet =
+      evResult && evResult.kind === "trade_promo" ? evResult.data : EMPTY_TRADE_PROMO_EVALUASI;
+
+    const updateTp = (updater: (d: TradePromoEvaluasiSheet) => TradePromoEvaluasiSheet) => {
+      setEditForm((f: any) => ({
+        ...f,
+        evaluasiDetail: {
+          kind: "trade_promo",
+          data: updater(f.evaluasiDetail && f.evaluasiDetail.kind === "trade_promo" ? f.evaluasiDetail.data : EMPTY_TRADE_PROMO_EVALUASI),
+        },
+      }));
+    };
+
+    return (
+      <div ref={modalScrollRef} className="flex-1 overflow-y-auto" style={{ background: C.white, fontFamily: "Calibri, Arial, sans-serif", color: C.text }}>
+        {headerLabel}
+        <TradePromoEvaluasiEditable data={tp} update={updateTp} formatRupiah={formatRupiah} isMobile={isMobile} />
+      </div>
+    );
+  }
+
+  // --------- Varian Activation (default) ---------
+  const ev: EvaluasiSheet = evResult && evResult.kind === "activation" ? evResult.data : EMPTY_EVALUASI;
 
   const updateEv = (updater: (e: EvaluasiSheet) => EvaluasiSheet) => {
-    setEditForm((f: any) => ({ ...f, evaluasiDetail: updater(f.evaluasiDetail ?? EMPTY_EVALUASI) }));
+    setEditForm((f: any) => ({
+      ...f,
+      evaluasiDetail: {
+        kind: "activation",
+        data: updater(f.evaluasiDetail && f.evaluasiDetail.kind === "activation" ? f.evaluasiDetail.data : EMPTY_EVALUASI),
+      },
+    }));
   };
 
   // --- 1. FILTER & SANITIZER (Mencegah Bug Tampilan Akibat Data Gagal Parsing) ---
@@ -441,9 +487,7 @@ export default function EvaluasiReplicaBody({
 
   return (
     <div ref={modalScrollRef} className="flex-1 overflow-y-auto" style={{ background: C.white, fontFamily: "Calibri, Arial, sans-serif", color: C.text }}>
-      <div style={{ padding: "10px 12px 0", fontSize: 13, color: "#555" }}>
-        Evaluasi untuk: <strong>{detail.nama_program || editForm.nama_program || "-"}</strong> ({detail.no_action_plan || editForm.no_action_plan || "-"})
-      </div>
+      {headerLabel}
 
       {/* ============ 01. TARGET DAN REALISASI EVENT ============ */}
       <SectionBar>01. TARGET DAN REALISASI EVENT</SectionBar>

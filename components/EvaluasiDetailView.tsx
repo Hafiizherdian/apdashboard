@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import type { EvaluasiSheet } from "@/lib/parseActionsPlan";
+import type { EvaluasiSheet, EvaluasiSheetResult } from "@/lib/parseActionsPlan";
+import EvaluasiTradePromoDetailView from "@/components/EvaluasiTradePromoDetailView";
 
 const C = {
   yellow: "#FFFF99",
@@ -120,13 +121,18 @@ function MobileSummaryListView({ rows }: { rows: { label: string; value: React.R
  * Versi READ-ONLY dari evaluasireplica.tsx (yang editable, dipakai di EntriAP).
  * Dipakai di halaman Data / Detail View — supaya evaluasi (sheet ke-3) ikut
  * tampil, bukan cuma bisa dilihat pas edit di menu Entri.
+ *
+ * `evaluasi` sekarang berupa union { kind: "activation" | "trade_promo", data } (lihat
+ * EvaluasiSheetResult di lib/parseActionsPlan.ts). Komponen ini jadi dispatcher: varian
+ * Activation dirender di sini seperti sebelumnya, varian Trade Promo dilempar ke
+ * EvaluasiTradePromoDetailView.
  */
 export default function EvaluasiDetailView({
   evaluasi,
   formatRupiah,
   isMobile = false,
 }: {
-  evaluasi: EvaluasiSheet | null | undefined;
+  evaluasi: EvaluasiSheetResult | null | undefined;
   formatRupiah: (v: number) => string;
   isMobile?: boolean;
 }) {
@@ -141,7 +147,21 @@ export default function EvaluasiDetailView({
     );
   }
 
-  const ev = evaluasi;
+  // FIX backward-compat: data lama (sebelum union {kind,data} ada) tersimpan sebagai
+  // EvaluasiSheet flat -- gak punya properti "kind" ataupun "data" sama sekali (objeknya
+  // SENDIRI adalah EvaluasiSheet). Deteksi itu, dan anggap varian Activation.
+  const kind: "activation" | "trade_promo" =
+    evaluasi && "kind" in evaluasi ? evaluasi.kind : "activation";
+
+  if (kind === "trade_promo") {
+    const tpData = evaluasi && "data" in evaluasi ? (evaluasi as any).data : undefined;
+    return <EvaluasiTradePromoDetailView data={tpData} formatRupiah={formatRupiah} isMobile={isMobile} />;
+  }
+
+  const ev: EvaluasiSheet =
+    evaluasi && "data" in evaluasi
+      ? (evaluasi as any).data
+      : (evaluasi as unknown as EvaluasiSheet); // data lama: objeknya sendiri = EvaluasiSheet
   const totalTargetEvent = (ev.targetEvent ?? []).reduce((s, r) => s + (r.totalTargetPenjualan || 0), 0);
   const totalRealisasiEvent = (ev.realisasiEvent ?? []).reduce((s, r) => s + (r.totalTargetPenjualan || 0), 0);
 
