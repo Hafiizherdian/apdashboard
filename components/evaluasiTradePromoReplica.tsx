@@ -363,11 +363,10 @@ export default function TradePromoEvaluasiEditable({
     update((e) => ({ ...e, [field]: e[field].filter((_, ri) => ri !== idx) }));
 
   // --------- Tanda Tangan ---------
-  const defaultSigLabels = ["DIBUAT OLEH :", "DIPERIKSA OLEH :", "DIPERIKSA OLEH :", "DIKETAHUI OLEH :"];
-  const safeSignatures = defaultSigLabels.map((lbl) => {
-    const keyword = lbl.split(" ")[0]; // "DIBUAT", "DIPERIKSA", "DIKETAHUI"
-    return d.signatures?.find((s) => (s.label || "").toUpperCase().includes(keyword)) || { label: lbl };
-  });
+//   const defaultSigLabels = ["DIBUAT OLEH :", "DIPERIKSA OLEH :", "DIPERIKSA OLEH :", "DIKETAHUI OLEH :"];
+  const safeSignatures = d.signatures?.length
+  ? d.signatures
+  : [{ label: "DIBUAT OLEH :" }, { label: "DIPERIKSA OLEH :" }, { label: "DIKETAHUI OLEH :" }];
   const updateSignature = (idx: number, key: keyof EvaluasiSignature, value: string) => {
     const nextSigs = [...safeSignatures];
     nextSigs[idx] = { ...nextSigs[idx], [key]: value };
