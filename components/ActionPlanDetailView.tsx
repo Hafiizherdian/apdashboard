@@ -25,6 +25,14 @@ const cellBase: React.CSSProperties = {
   fontSize: 13,
   verticalAlign: "middle",
 };
+function formatCostPerPack(v: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v);
+}
 
 function SectionBar({ children, bg = C.blackBar, color = C.white }: { children: React.ReactNode; bg?: string; color?: string }) {
   return (
@@ -971,7 +979,7 @@ export default function ActionPlanDetailView({
                   const costPerPack = totalQtyBks > 0 ? r.total / totalQtyBks : 0;
                   const costRatio = totalTargetPenjualan > 0 ? r.total / totalTargetPenjualan : 0;
                   return [
-                    { label: "Cost Per Pack", value: formatRupiah(costPerPack) },
+                    { label: "Cost Per Pack", value: formatCostPerPack(costPerPack) },
                     { label: "Cost Ratio", value: pct(costRatio) },
                   ];
                 }}
@@ -980,7 +988,7 @@ export default function ActionPlanDetailView({
                 <MobileSummaryListView
                   bold
                   rows={[
-                    { label: "Total Biaya (Cost/Pack)", value: formatRupiah(totalCostPerPack) },
+                    { label: "Total Biaya (Cost/Pack)", value: formatCostPerPack(totalCostPerPack) },
                     { label: "Total Biaya (Cost Ratio)", value: pct(totalCostRatio) },
                   ]}
                 />
@@ -1037,7 +1045,7 @@ export default function ActionPlanDetailView({
                         <tr key={i}>
                           <td style={{ ...cellBase, textAlign: "center" }}>{i + 1}</td>
                           <td style={cellBase}>{r.label}</td>
-                          <td style={{ ...cellBase, textAlign: "right" }}>{formatRupiah(costPerPack)}</td>
+                          <td style={{ ...cellBase, textAlign: "right" }}>{formatCostPerPack(costPerPack)}</td>
                           <td style={{ ...cellBase, textAlign: "right" }}>{pct(costRatio)}</td>
                         </tr>
                       );
@@ -1046,7 +1054,7 @@ export default function ActionPlanDetailView({
                   <tfoot>
                     <tr>
                       <td colSpan={2} style={{ ...cellBase, background: C.totalRow, fontWeight: 700, textAlign: "right" }}>Total Biaya</td>
-                      <td style={{ ...cellBase, background: C.yellow, fontWeight: 700, textAlign: "right" }}>{formatRupiah(totalCostPerPack)}</td>
+                      <td style={{ ...cellBase, background: C.yellow, fontWeight: 700, textAlign: "right" }}>{formatCostPerPack(totalCostPerPack)}</td>
                       <td style={{ ...cellBase, background: C.yellow, fontWeight: 700, textAlign: "right" }}>{pct(totalCostRatio)}</td>
                     </tr>
                   </tfoot>

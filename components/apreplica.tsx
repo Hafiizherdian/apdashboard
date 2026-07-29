@@ -102,6 +102,15 @@ function computeAnalisaBiaya(editForm: any) {
   return { rows, totalCostPerPack, totalCostRatio };
 }
 
+function formatCostPerPack(v: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v);
+}
+
 function EditableCell({
   value,
   onChange,
@@ -1288,10 +1297,10 @@ export default function ExcelReplicaBody({
                   <MobileSummaryList
                     rows={rows.map((r) => ({
                       label: r.label,
-                      value: `${formatRupiah ? formatRupiah(r.costPerPack) : r.costPerPack} · ${pct(r.costRatio)}`,
+                      value: `${formatRupiah ? formatCostPerPack(r.costPerPack) : r.costPerPack} · ${pct(r.costRatio)}`,
                     }))}
                   />
-                  <MobileSummaryList bold rows={[{ label: "Total Biaya", value: `${formatRupiah ? formatRupiah(totalCostPerPack) : totalCostPerPack} · ${pct(totalCostRatio)}` }]} />
+                  <MobileSummaryList bold rows={[{ label: "Total Biaya", value: `${formatRupiah ? formatCostPerPack(totalCostPerPack) : totalCostPerPack} · ${pct(totalCostRatio)}` }]} />
                 </div>
               );
             }
@@ -1312,7 +1321,7 @@ export default function ExcelReplicaBody({
                       <td style={{ ...cellBase, textAlign: "center" }}>{i + 1}</td>
                       <td style={cellBase}>{r.label}</td>
                       <td style={{ ...cellBase, textAlign: "right" }}>
-                        {formatRupiah ? formatRupiah(r.costPerPack) : r.costPerPack}
+                        {formatCostPerPack ? formatCostPerPack(r.costPerPack) : r.costPerPack}
                       </td>
                       <td style={{ ...cellBase, textAlign: "right" }}>{pct(r.costRatio)}</td>
                     </tr>
@@ -1324,7 +1333,7 @@ export default function ExcelReplicaBody({
                       Total Biaya
                     </td>
                     <td style={{ ...cellBase, background: C.yellow, fontWeight: 700, textAlign: "right" }}>
-                      {formatRupiah ? formatRupiah(totalCostPerPack) : totalCostPerPack}
+                      {formatCostPerPack ? formatCostPerPack(totalCostPerPack) : totalCostPerPack}
                     </td>
                     <td style={{ ...cellBase, background: C.yellow, fontWeight: 700, textAlign: "right" }}>{pct(totalCostRatio)}</td>
                   </tr>
