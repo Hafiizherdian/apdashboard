@@ -792,7 +792,7 @@ export default function ExcelReplicaBody({
                         <EditableCell value={row.brand ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "brand", v)} />
                         <EditableCell value={row.qty ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "qty", Number(v))} type="number" align="right" />
                         <EditableCell value={row.harga ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "harga", Number(v))} currency formatRupiah={formatRupiah} align="right" />
-                        <EditableCell value={row.TargetPenjualan ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "targetPenjualan", Number(v))} currency formatRupiah={formatRupiah} align="right"
+                        <EditableCell value={row.TargetPenjualan ?? ""} onChange={(v) => handleTableChange("TargetEvent", i, "TargetPenjualan", Number(v))} currency formatRupiah={formatRupiah} align="right"
                         />
                         <DeleteCell onClick={() => removeRow("TargetEvent", i)} />
                       </tr>
