@@ -8,16 +8,16 @@ interface RegionalOpt {
   name: string;
 }
 
-function FilterSelect({ label, accentColor = '#3b82f6', value, onChange, children, theme, fullWidth }: {
+function FilterSelect({ label, accentColor = '#3b82f6', value, onChange, children, theme, fullWidth, compact }: {
   label: string; accentColor?: string; value: string | number;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: React.ReactNode; theme: Theme; fullWidth?: boolean;
+  children: React.ReactNode; theme: Theme; fullWidth?: boolean; compact?: boolean;
 }) {
   const t = tk[theme];
   return (
-    <div style={{ display: 'flex', alignItems: 'stretch', border: `1px solid ${t.inputBorder}`, borderRadius: 8, overflow: 'hidden', flex: fullWidth ? '1 1 auto' : undefined, minWidth: 0 }}>
-      <span style={{ padding: '6px 10px', fontSize: 10, fontFamily: 'IBM Plex Mono,monospace', textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 600, color: accentColor, background: `${accentColor}18`, borderRight: `1px solid ${t.inputBorder}`, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
-      <select value={value} onChange={onChange} style={{ background: t.selectBg, border: 'none', outline: 'none', padding: '6px 10px', fontSize: 12, fontFamily: 'IBM Plex Mono,monospace', color: t.text, cursor: 'pointer', flex: 1, minWidth: 0, appearance: 'none', width: '100%' }}>
+    <div style={{ display: 'flex', alignItems: 'stretch', border: `1px solid ${t.inputBorder}`, borderRadius: compact ? 6 : 8, overflow: 'hidden', flex: fullWidth ? '1 1 auto' : undefined, minWidth: 0, flexShrink: compact ? 0 : undefined }}>
+      <span style={{ padding: compact ? '4px 7px' : '6px 10px', fontSize: compact ? 9 : 10, fontFamily: 'IBM Plex Mono,monospace', textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 600, color: accentColor, background: `${accentColor}18`, borderRight: `1px solid ${t.inputBorder}`, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
+      <select value={value} onChange={onChange} style={{ background: t.selectBg, border: 'none', outline: 'none', padding: compact ? '4px 7px' : '6px 10px', fontSize: compact ? 11 : 12, fontFamily: 'IBM Plex Mono,monospace', color: t.text, cursor: 'pointer', flex: 1, minWidth: 0, appearance: 'none', width: compact ? 'auto' : '100%' }}>
         {children}
       </select>
     </div>
@@ -70,12 +70,35 @@ function ActionPlanFilterBar({
   options,
   theme,
   isMobile,
+  sticky = true,
+  stickyTop = 0,
+  edgeToEdge = true,
+  bleedTop = true,
+  inset = 20,
 }: {
   value: ActionPlanFilterState;
   onChange: (next: ActionPlanFilterState) => void;
   options: ActionPlanFilterOptions;
   theme: Theme;
   isMobile?: boolean;
+  // Aktifkan/nonaktifkan sticky di desktop. Default: true.
+  sticky?: boolean;
+  // Jarak dari atas viewport saat nempel (isi kalau ada header/topbar lain
+  // di atas filter bar ini, supaya tidak numpuk / ketutup).
+  stickyTop?: number;
+  // Master switch untuk bleed horizontal (kiri-kanan). Kalau true (default),
+  // di desktop bar ini "membatalkan" padding parent secara horizontal pakai
+  // negative margin, sehingga full-width nempel ke sidebar & tepi kanan layar.
+  edgeToEdge?: boolean;
+  // Kontrol bleed vertikal (atas) SECARA TERPISAH dari horizontal. Set true
+  // HANYA kalau filter bar ini adalah elemen paling atas / langsung nempel
+  // di padding-top container (spt di Overview.tsx). Kalau ada elemen lain
+  // di atasnya (mis. box upload), set false — supaya tidak overlap/numpuk.
+  bleedTop?: boolean;
+  // Besarnya padding parent yang mau dibatalkan secara horizontal. HARUS
+  // dijumlah dari SEMUA layer padding di atasnya, contoh: <main padding:20>
+  // + <div className="p-2"> (8px) => inset={28}, bukan cuma 20.
+  inset?: number;
 }) {
   const t = tk[theme];
   const set = (key: keyof ActionPlanFilterState) =>
@@ -90,36 +113,98 @@ function ActionPlanFilterBar({
       .catch((err) => console.error('Gagal ambil regional:', err));
   }, []);
 
-  return (
-    <div style={{ background: t.cardbg, border: `1px solid ${t.borderCard}`, borderRadius: 13, padding: isMobile ? 14 : 20 }}>
-      <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: t.textMuted, fontFamily: 'IBM Plex Mono,monospace', textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: isMobile ? 8 : 10 }}>
-        Filter Data
-      </span>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, auto)', gap: 8, alignItems: 'center', justifyContent: isMobile ? 'stretch' : 'flex-start' }}>
-        <FilterSelect label="Regional" accentColor="#10b981" value={value.regional} onChange={set('regional')} theme={theme} fullWidth={isMobile}>
+  // Sticky cuma aktif di desktop. Di mobile dibiarkan mengalir normal
+  // (nav-nya di bawah, layar sempit, sticky di atas malah makan tempat).
+  const isSticky = sticky && !isMobile;
+  const isBleedX = edgeToEdge && !isMobile;
+  const isBleedTop = edgeToEdge && bleedTop && !isMobile;
+
+  // ===== DESKTOP: navbar tipis satu baris, nempel di atas =====
+  if (!isMobile) {
+    return (
+      <div
+        style={{
+          background: t.cardbg,
+          borderBottom: `1px solid ${t.borderCard}`,
+          padding: isBleedX ? `8px ${16 + inset}px` : '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
+          ...(isBleedX ? { marginLeft: -inset, marginRight: -inset } : null),
+          ...(isBleedTop ? { marginTop: -inset } : null),
+          ...(isSticky
+            ? {
+                position: 'sticky' as const,
+                top: stickyTop,
+                zIndex: 30,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+              }
+            : null),
+        }}
+      >
+        <FilterSelect label="Regional" accentColor="#10b981" value={value.regional} onChange={set('regional')} theme={theme} compact>
           <option value="all" style={{ background: t.inputBg }}>Semua Regional</option>
           {regionalOptions.map((r) => (
             <option key={r.id} value={r.id} style={{ background: t.inputBg }}>{r.name}</option>
           ))}
         </FilterSelect>
 
-        <FilterSelect label="Area" accentColor="#f59e0b" value={value.area} onChange={set('area')} theme={theme} fullWidth={isMobile}>
+        <FilterSelect label="Area" accentColor="#f59e0b" value={value.area} onChange={set('area')} theme={theme} compact>
           <option value="all" style={{ background: t.inputBg }}>Semua Area</option>
           {options.area.map((a) => <option key={a} value={a} style={{ background: t.inputBg }}>{a}</option>)}
         </FilterSelect>
 
-        <FilterSelect label="Kategori" accentColor="#8b5cf6" value={value.kategori} onChange={set('kategori')} theme={theme} fullWidth={isMobile}>
+        <FilterSelect label="Kategori" accentColor="#8b5cf6" value={value.kategori} onChange={set('kategori')} theme={theme} compact>
           <option value="all" style={{ background: t.inputBg }}>Semua Kategori</option>
           {options.kategori.map((c) => <option key={c} value={c} style={{ background: t.inputBg }}>{c}</option>)}
         </FilterSelect>
 
-        <FilterSelect label="Brand" accentColor="#ef4444" value={value.brand} onChange={set('brand')} theme={theme} fullWidth={isMobile}>
+        <FilterSelect label="Brand" accentColor="#ef4444" value={value.brand} onChange={set('brand')} theme={theme} compact>
           <option value="all" style={{ background: t.inputBg }}>Semua Brand</option>
           {options.brand.map((b) => <option key={b} value={b} style={{ background: t.inputBg }}>{b}</option>)}
         </FilterSelect>
 
-        <div style={{ gridColumn: isMobile ? '1 / -1' : undefined }}>
-          <FilterSelect label="Status" accentColor="#3b82f6" value={value.status} onChange={set('status')} theme={theme} fullWidth={isMobile}>
+        <FilterSelect label="Status" accentColor="#3b82f6" value={value.status} onChange={set('status')} theme={theme} compact>
+          <option value="all" style={{ background: t.inputBg }}>Semua Status</option>
+          {options.status.map((s) => <option key={s} value={s} style={{ background: t.inputBg }}>{s}</option>)}
+        </FilterSelect>
+      </div>
+    );
+  }
+
+  // ===== MOBILE: tetap card besar dengan label, grid 2 kolom =====
+  return (
+    <div style={{ background: t.cardbg, border: `1px solid ${t.borderCard}`, borderRadius: 13, padding: 14 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, fontFamily: 'IBM Plex Mono,monospace', textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 8 }}>
+        Filter Data
+      </span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'center' }}>
+        <FilterSelect label="Regional" accentColor="#10b981" value={value.regional} onChange={set('regional')} theme={theme} fullWidth>
+          <option value="all" style={{ background: t.inputBg }}>Semua Regional</option>
+          {regionalOptions.map((r) => (
+            <option key={r.id} value={r.id} style={{ background: t.inputBg }}>{r.name}</option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect label="Area" accentColor="#f59e0b" value={value.area} onChange={set('area')} theme={theme} fullWidth>
+          <option value="all" style={{ background: t.inputBg }}>Semua Area</option>
+          {options.area.map((a) => <option key={a} value={a} style={{ background: t.inputBg }}>{a}</option>)}
+        </FilterSelect>
+
+        <FilterSelect label="Kategori" accentColor="#8b5cf6" value={value.kategori} onChange={set('kategori')} theme={theme} fullWidth>
+          <option value="all" style={{ background: t.inputBg }}>Semua Kategori</option>
+          {options.kategori.map((c) => <option key={c} value={c} style={{ background: t.inputBg }}>{c}</option>)}
+        </FilterSelect>
+
+        <FilterSelect label="Brand" accentColor="#ef4444" value={value.brand} onChange={set('brand')} theme={theme} fullWidth>
+          <option value="all" style={{ background: t.inputBg }}>Semua Brand</option>
+          {options.brand.map((b) => <option key={b} value={b} style={{ background: t.inputBg }}>{b}</option>)}
+        </FilterSelect>
+
+        <div style={{ gridColumn: '1 / -1' }}>
+          <FilterSelect label="Status" accentColor="#3b82f6" value={value.status} onChange={set('status')} theme={theme} fullWidth>
             <option value="all" style={{ background: t.inputBg }}>Semua Status</option>
             {options.status.map((s) => <option key={s} value={s} style={{ background: t.inputBg }}>{s}</option>)}
           </FilterSelect>

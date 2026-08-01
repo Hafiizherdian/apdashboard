@@ -502,9 +502,29 @@ const sortedItems = [...items].sort((a, b) => {
 });
 
   return (
+    
     <div className="p-2 space-y-2" style={{ backgroundColor: t.pagebg, color: t.text, minHeight: "100vh" }}>
       {!selectedId && (
         <>
+        {/* Filter
+              FIX: filter bar ini BUKAN elemen paling atas (ada card "Upload
+              Action Plan" di atasnya), dan parent-nya (div ini) punya
+              className="p-2" (8px) DI ATAS padding <main> (20px) dari
+              Home.tsx. Jadi:
+              - inset={28}   -> 20 (main) + 8 (p-2) = total padding yang
+                                perlu dibatalkan secara horizontal.
+              - bleedTop={false} -> jangan tarik ke atas (marginTop negatif),
+                                supaya TIDAK overlap/numpuk sama card Upload
+                                di atasnya. Sticky tetap jalan normal. */}
+          <ActionPlanFilterBar
+            value={filters}
+            onChange={handleFilterChange}
+            options={filterOptions}
+            theme={theme}
+            isMobile={isMobile}
+            inset={28}
+            bleedTop={true}
+          />
           <div className="flex items-center justify-between flex-wrap gap-2">
   {/* <h1 className="text-xl font-semibold">Entri Action Plan</h1> */}
           </div>
@@ -630,8 +650,7 @@ const sortedItems = [...items].sort((a, b) => {
           </div>
           </div>
 
-          {/* Filter */}
-          <ActionPlanFilterBar value={filters} onChange={handleFilterChange} options={filterOptions} theme={theme} isMobile={isMobile} />
+          
 
           {/* Search */}
           <input
