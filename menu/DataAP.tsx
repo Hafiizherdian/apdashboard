@@ -154,8 +154,8 @@ function DataAP({ theme }: { theme: Theme }) {
   };
 
   const columns: TableColumn<TableRow>[] = [
-    { key: "area", label: "Lokasi program", isSticky: true, stickyLeft: 0, sortable: true },
-    { key: "no", label: "No AP", isSticky: true, stickyLeft: 113, sortable: true },
+    { key: "area", label: "Lokasi program", isSticky: true, stickyLeft: 0, width: "220px", stickyWidth: "220px", sortable: true },
+    { key: "no", label: "No AP", isSticky: true, stickyLeft: 220, width: "170px", stickyWidth: "250px", sortable: true },
     { key: "tipe", label: "Tipe", sortable: true },
     { key: "brand", label: "Brand", sortable: true },
     { key: "program", label: "Nama Program", sortable: true },
