@@ -121,15 +121,16 @@ function buildFilterClause(
 
   if (filters.area) {
     params.push(filters.area);
-    clauses.push(`${prefix}perwakilan_agen = $${params.length}`);
+    // menggunakan UPPER di kedua sisi agar case-insensitive tapi tetap exact match
+    clauses.push(`UPPER(${prefix}perwakilan_agen) = UPPER($${params.length})`);
   }
   if (filters.kategori) {
     params.push(filters.kategori);
-    clauses.push(`${prefix}jenis_program = $${params.length}`);
+    clauses.push(`UPPER(${prefix}jenis_program) = UPPER($${params.length})`);
   }
   if (filters.brand) {
     params.push(filters.brand);
-    clauses.push(`${prefix}brand = $${params.length}`);
+    clauses.push(`UPPER(${prefix}brand) = UPPER($${params.length})`);
   }
 
   const notCancelled = `${prefix}status_override IS DISTINCT FROM 'Dibatalkan'`;
@@ -149,7 +150,7 @@ function buildFilterClause(
   return clauses.length ? clauses.join(" AND ") : "";
 }
 
-// ---------- Helpers ----------
+// Helpers
 
 /**
  * Urutan prioritas:
@@ -191,7 +192,7 @@ function parseJsonbColumn<T>(v: unknown): T | null {
   return v as T;
 }
 
-// ---------- List ----------
+// List
 
 export async function listActionPlans(opts: {
   search?: string;
@@ -396,7 +397,7 @@ export async function listActionPlansTable(opts: {
   return { items, total };
 }
 
-// ---------- Detail ----------
+// Detail
 
 export async function getActionPlanById(id: number): Promise<ActionPlanDetail | null> {
   const headerRes = await pool.query(`SELECT * FROM action_plans WHERE id = $1`, [id]);
@@ -506,7 +507,7 @@ export async function getActionPlanById(id: number): Promise<ActionPlanDetail | 
   };
 }
 
-// ---------- Create (dari upload xlsx) ----------
+// Create (dari upload xlsx)
 
 export async function createActionPlanFromFile(
   buffer: Buffer,
@@ -641,7 +642,7 @@ async function insertChildren(client: PoolClient, id: number, parsed: ActionPlan
   }
 }
 
-// ---------- Update (edit dari form) ----------
+// Update (edit dari form)
 
 const HEADER_FIELD_MAP: Record<string, string> = {
   regional_id: "regional_id",
@@ -673,7 +674,7 @@ export async function updateActionPlanFull(
   try {
     await client.query("BEGIN");
 
-    // --- Update scalar header fields ---
+    // Update scalar header fields
     const setClauses: string[] = [];
     const values: unknown[] = [];
     let idx = 1;
@@ -715,7 +716,7 @@ export async function updateActionPlanFull(
       );
     }
 
-    // --- Replace child arrays (delete lalu insert ulang) ---
+    // Replace child arrays (delete lalu insert ulang)
     if ("TargetProgram" in data) {
       await client.query(`DELETE FROM action_plan_target_program WHERE action_plan_id = $1`, [id]);
       const rows = data.TargetProgram as any[];
@@ -836,7 +837,7 @@ export async function updateActionPlanFull(
   }
 }
 
-// ---------- Perpanjangan / Memorandum ----------
+// Perpanjangan / Memorandum
 
 /**
  * Catat satu perpanjangan baru: simpan riwayatnya (tanggal lama, tanggal
@@ -891,13 +892,13 @@ export async function addPerpanjangan(
   }
 }
 
-// ---------- Delete ----------
+// Delete
 
 export async function deleteActionPlan(id: number): Promise<void> {
   await pool.query(`DELETE FROM action_plans WHERE id = $1`, [id]);
 }
 
-// ---------- Summary (buat Overview.tsx) ----------
+// Summary (buat Overview.tsx)
 
 export interface ActionPlanSummary {
   totalActionPlan: number;
@@ -946,7 +947,7 @@ export async function getActionPlanSummary(filters?: ActionPlanFilters): Promise
   };
 }
 
-// ---------- Jumlah AP per Kategori (buat Overview.tsx) ----------
+// Jumlah AP per Kategori (buat Overview.tsx)
 
 export interface ActionPlanByKategoriPoint {
   kategori: string;
