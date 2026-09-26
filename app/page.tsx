@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { AuthProvider } from '@/lib/auth/AuthContext';
-import { Sidebar, TabId } from '@/components/sidebar';
-import { tk, Theme } from '@/components/share';
+import { Sidebar, TabId } from '@/components/layout/sidebar';
+import { tk, Theme } from '@/components/layout/share';
 import Overview from '@/menu/Overview';
 import DataAP from '@/menu/DataAP';
 import EntriAP from '@/menu/EntriAP';

@@ -12,7 +12,7 @@ import {
 
 import { AuthProvider, useAuth } from '@/lib/auth/AuthContext';
 import { ROLE_LABELS, UserRole } from '@/lib/auth/types';
-import { tk, Theme, Tokens, FONT_SANS, FONT_MONO } from '@/components/share';
+import { tk, Theme, Tokens, FONT_SANS, FONT_MONO } from '@/components/layout/share';
 import AdminRegional from '@/menu/admin/AdminRegional';
 import AdminUsers from '@/menu/admin/AdminUsers';
 

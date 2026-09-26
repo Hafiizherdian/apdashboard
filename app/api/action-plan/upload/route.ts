@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseActionPlanBuffer } from "@/lib/parseActionsPlan";
-import { createActionPlanFromFile } from "@/lib/actionPlanRepository"; 
+import { parseActionPlanBuffer } from "@/lib/utils/parseActionsPlan";
+import { createActionPlanFromFile } from "@/lib/repositories/actionPlanRepository"; 
 
 export const runtime = "nodejs"; // wajib, exceljs & pg butuh Node runtime, bukan edge
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByUsername, resolveUserScope } from "@/lib/userRepository";
+import { getUserByUsername, resolveUserScope } from "@/lib/repositories/userRepository";
 import { verifyPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { COOKIE_NAME } from "@/lib/auth/session";

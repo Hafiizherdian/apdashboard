@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect } from "react";
-import ActionPlanMekanismeDetailEdit from "@/components/ActionPlanMekanismeDetailEdit";
+import ActionPlanMekanismeDetailEdit from "@/components/features/action-plan/ActionPlanMekanismeDetailEdit";
 import {
   MobileCardList,
   MobileSummaryList,
@@ -11,7 +11,7 @@ import {
   MobileCurrencyInput,
   MobileCheckboxRow,
   MobileFormField,
-} from "@/components/Responsivecardtable";
+} from "@/components/ui/Responsivecardtable";
 
 /**
  * Replika layout Excel "Action Plan" — grid nyambung, warna & penomoran section

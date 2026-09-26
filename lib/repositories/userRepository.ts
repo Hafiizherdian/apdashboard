@@ -1,4 +1,4 @@
-import { pool } from "@/lib/db";
+import { pool } from "@/lib/config/db";
 import { hashPassword } from "@/lib/auth/password";
 import type { UserRole, ScopeType, SessionUser } from "@/lib/auth/types";
 

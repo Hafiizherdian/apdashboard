@@ -1,8 +1,8 @@
 'use client';
 
-import { tk, Theme, CardBox, FONT_MONO } from "@/components/share";
+import { tk, Theme, CardBox, FONT_MONO } from "@/components/layout/share";
 import { FileText, ArrowLeft, Calendar, Landmark } from 'lucide-react';
-import { Table, TableColumn } from "@/components/Table";
+import { Table, TableColumn } from "@/components/ui/Table";
 import {
   ActionPlanFilterBar,
   DEFAULT_AP_FILTER_STATE,
@@ -10,10 +10,10 @@ import {
   ActionPlanFilterState,
   ActionPlanFilterOptions,
   filterStateToParams,
-} from "@/components/Filter";
+} from "@/components/ui/Filter";
 import { useCallback, useEffect, useState } from "react";
-import ActionPlanDetailView from "@/components/ActionPlanDetailView";
-import EvaluasiDetailView from "@/components/EvaluasiDetailView";
+import ActionPlanDetailView from "@/components/features/action-plan/ActionPlanDetailView";
+import EvaluasiDetailView from "@/components/features/evaluasi/EvaluasiDetailView";
 
 const GAP = 8;
 

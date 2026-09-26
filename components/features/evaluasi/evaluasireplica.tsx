@@ -9,7 +9,7 @@ import type {
   EvaluasiAnggaranRow,
   EvaluasiSamplingItemRow,
   EvaluasiSignature,
-} from "@/lib/parseActionsPlan";
+} from "@/lib/utils/parseActionsPlan";
 import {
   MobileCardList,
   MobileSummaryList,
@@ -20,10 +20,10 @@ import {
   MobilePercentInput,
   MobileDateInput,
   MobileFormField,
-} from "@/components/Responsivecardtable";
+} from "@/components/ui/Responsivecardtable";
 import TradePromoEvaluasiEditable, {
   EMPTY_TRADE_PROMO_EVALUASI,
-} from "@/components/evaluasiTradePromoReplica";
+} from "@/components/features/evaluasi/evaluasiTradePromoReplica";
 
 const C = {
   yellow: "#FFFF99",

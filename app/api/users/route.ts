@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listUsers, createUser } from "@/lib/userRepository";
+import { listUsers, createUser } from "@/lib/repositories/userRepository";
 import { withAuth } from "@/lib/auth/session";
 
 export async function GET(req: NextRequest) {

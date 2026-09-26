@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { tk, Theme } from './share';
+import { tk, Theme } from '../layout/share';
 
 interface RegionalOpt {
   id: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { tk, Theme } from "./share";
+import { tk, Theme } from "../layout/share";
 
 
 function KpiMini({ bg, border, labelColor, label, value, sub, badge, theme, accent }:{

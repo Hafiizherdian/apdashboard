@@ -3,7 +3,7 @@ import {
   getActionPlanById,
   updateActionPlanFull,
   deleteActionPlan,
-} from "@/lib/actionPlanRepository";
+} from "@/lib/repositories/actionPlanRepository";
 
 export const runtime = "nodejs";
 

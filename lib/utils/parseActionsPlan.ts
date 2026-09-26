@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-// ---------- Types ----------
+// Types
 
 export interface ActionPlanHeader {
   noActionPlan?: string;
@@ -120,7 +120,7 @@ export interface MekanismeSheet {
   subPrograms: MekanismeSubProgram[];
 }
 
-// ---------- Sheet ke-3, varian A: EVALUASI ACTION PLAN (JENIS PROGRAM = ACTIVATION dsb) ----------
+// Sheet ke-3, varian A: EVALUASI ACTION PLAN (JENIS PROGRAM = ACTIVATION dsb)
 
 export interface EvaluasiEventRow {
   jenisProgram?: string;
@@ -172,7 +172,7 @@ export interface EvaluasiSheet {
   signatures: EvaluasiSignature[];
 }
 
-// ---------- Sheet ke-3, varian B: EVALUASI ACTION PLAN (JENIS PROGRAM = TRADE PROMO) ----------
+// Sheet ke-3, varian B: EVALUASI ACTION PLAN (JENIS PROGRAM = TRADE PROMO)
 
 export interface EvaluasiPencapaianRow {
   /** Biasanya berisi "0" (placeholder template) atau nama baris, jarang bermakna kecuali baris TOTAL */
@@ -279,7 +279,7 @@ export interface ActionPlanParsed {
   rawGrid: (string | number | null)[][];
 }
 
-// ---------- Core helpers ----------
+// Core helpers
 
 function sheetToGrid(sheet: ExcelJS.Worksheet): (string | number | null)[][] {
   const grid: (string | number | null)[][] = [];
@@ -512,7 +512,7 @@ function numberInSpan(
   return undefined;
 }
 
-// ---------- Peta section anak & batas baris ----------
+// Peta section anak & batas baris
 
 const CHILD_SECTIONS = [
   "TARGET PROGRAM",
@@ -544,7 +544,7 @@ function sectionEnd(rows: Record<string, number>, label: string, gridLen: number
   return (nexts[0] ?? gridLen + 1) - 1;
 }
 
-// ---------- Header ----------
+// Header
 
 function extractHeader(grid: (string | number | null)[][]): ActionPlanHeader {
   const get = (label: string, exact = false) => {
@@ -555,7 +555,7 @@ function extractHeader(grid: (string | number | null)[][]): ActionPlanHeader {
   const header: ActionPlanHeader = {
     noActionPlan: String(get("NO. ACTION PLAN") ?? ""),
     perwakilanAgen: String(get("PERWAKILAN") ?? ""),
-    brand: String(get("BRAND", true) ?? ""), // <-- exact match
+    brand: String(get("BRAND", true) ?? ""), // exact match
     namaProgram: String(get("NAMA PROGRAM") ?? ""),
     jenisProgram: String(get("JENIS PROGRAM") ?? ""),
     lokasiProgram: String(get("LOKASI PROGRAM") ?? ""),
@@ -610,7 +610,7 @@ function extractHeader(grid: (string | number | null)[][]): ActionPlanHeader {
   return header;
 }
 
-// ---------- Latar Belakang / Objektif / Mekanisme ----------
+// Latar Belakang / Objektif / Mekanisme 
 
 function extractNumberedList(
   grid: (string | number | null)[][],
@@ -628,7 +628,7 @@ function extractNumberedList(
     const rowVals = grid[r - 1];
     const startCol = r === pos.row ? pos.col : 0;
 
-    // --- CEK DULU: apakah baris ini section header baru (stop / child section lain)? ---
+    // CEK DULU: apakah baris ini section header baru (stop / child section lain)?
     if (r > pos.row) {
       const headerHit = rowVals.some((v, idx) => {
         if (bulletCol !== null && idx === bulletCol) return false; // jangan cek kolom bullet
@@ -690,12 +690,12 @@ function extractNumberedList(
   return lines.length ? lines.join("\n") : undefined;
 }
 
-// ---------- Target Program ----------
+// Target Program
 
 function extractUraianProgram(
   grid: (string | number | null)[][],
   rows: Record<string, number>,
-  gridLen: number // <-- param baru
+  gridLen: number // param baru
 ): string | undefined {
   const label = "TARGET PROGRAM";
   const pos = findLabelCell(grid, label);
@@ -783,7 +783,7 @@ function extractTargetProgram(
   return out;
 }
 
-// ---------- Target Event atau Sejenisnya ----------
+// Target Event atau Sejenisnya
 
 function extractTargetEvent(
   grid: (string | number | null)[][],
@@ -842,7 +842,7 @@ function extractTargetEvent(
   return out;
 }
 
-// ---------- Data Distribusi ----------
+// Data Distribusi
 
 function extractDistribusi(
   grid: (string | number | null)[][],
@@ -897,7 +897,7 @@ function extractDistribusi(
   return out;
 }
 
-// ---------- Anggaran Biaya Promosi ----------
+// Anggaran Biaya Promosi
 
 function extractAnggaranBiaya(
   grid: (string | number | null)[][],
@@ -938,7 +938,7 @@ function extractAnggaranBiaya(
   return out;
 }
 
-// ---------- Tenaga Kerja Lepas ----------
+// Tenaga Kerja Lepas
 
 function extractThl(
   grid: (string | number | null)[][],
@@ -981,7 +981,7 @@ function extractThl(
   return out;
 }
 
-// ---------- Kebutuhan Barang Promosi ----------
+// Kebutuhan Barang Promosi
 
 function extractBarangPromo(
   grid: (string | number | null)[][],
@@ -1025,7 +1025,7 @@ function extractBarangPromo(
   return out;
 }
 
-// ---------- Trial Taste / Brand Jalan + Total Biaya yang Dibutuhkan (bersebelahan) ----------
+// Trial Taste / Brand Jalan + Total Biaya yang Dibutuhkan (bersebelahan)
 
 function extractBrandJln(grid: (string | number | null)[][], gridLen: number): BrandJlnRow[] {
   const pos = findLabelCell(grid, "PROGRAM YANG DIJALANKAN");
@@ -1102,7 +1102,7 @@ function extractTbyd(grid: (string | number | null)[][], gridLen: number): TbydR
   return [{ biayaPromo, jasaperorg, kbtBrgPrm, trialTaste, estimasiTotal }];
 }
 
-// ---------- Permintaan Transfer + Analisa (bersebelahan) ----------
+// Permintaan Transfer + Analisa (bersebelahan)
 
 function extractTransfer(grid: any[][], gridLen: number): TransferRow[] {
   const pos = findLabelCell(grid, "PERMINTAAN TRANSFER");
@@ -1187,7 +1187,7 @@ function extractAnalisa(grid: (string | number | null)[][], gridLen: number): An
   return out;
 }
 
-// ---------- SHEET KE-2: MEKANISME PROGRAM (block-based, generik) ----------
+// SHEET KE-2: MEKANISME PROGRAM (block-based, generik)
 
 /** Deteksi tipe sub-program dari judulnya, dipakai frontend buat pilih cara render tabel. */
 function detectSubProgramType(judul: string): MekanismeSubProgram["tipe"] {
@@ -2332,7 +2332,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
   const pencapaianPos = findLabelCell(grid, "TOTAL PENCAPAIAN PROGRAM");
   if (!pencapaianPos) return null;
 
-  // --- Tabel pencapaian program (atas) ---
+  // Tabel pencapaian program (atas)
   const pencapaianHeaderPos = findLabelCellFrom(grid, pencapaianPos.row + 1, "KETERANGAN", true);
   let pencapaianProgram: EvaluasiPencapaianRow[] = [];
   let pencapaianProgramTotal: EvaluasiPencapaianRow | undefined;
@@ -2349,7 +2349,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
   const targetPenjualanTercapaiPercent1 = tpt1.value;
   cursor = tpt1.row ? tpt1.row + 1 : cursor;
 
-  // --- Section "01": Target Sales / Realisasi Sales / Deviasi ---
+  // Section "01": Target Sales / Realisasi Sales / Deviasi
   let salesRows: EvaluasiSalesRow[] = [];
   let targetPenjualanTercapaiPercent2: number | undefined;
   const salesHeaderPos = findLabelCellFrom(grid, cursor, "KETERANGAN", true);
@@ -2363,7 +2363,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
     cursor = tpt2.row ? tpt2.row + 1 : cursor + 1;
   }
 
-  // --- Section "02" (pertama): tabel WS mingguan ---
+  // Section "02" (pertama): tabel WS mingguan
   const wsPencapaianPos = findLabelCellFrom(grid, cursor, "TOTAL PENCAPAIAN PROGRAM");
   let wsRows: EvaluasiWsRow[] = [];
   let wsTotal: EvaluasiWsRow | undefined;
@@ -2381,7 +2381,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
     }
   }
 
-  // --- Section "02" (kedua): tabel Biaya Pengajuan/Realisasi/Deviasi ---
+  // Section "02" (kedua): tabel Biaya Pengajuan/Realisasi/Deviasi
   let biayaRows: EvaluasiBiayaRow[] = [];
   let totalBiayaTerpakaiPercent: number | undefined;
   const biayaHeaderPos = findLabelCellFrom(grid, cursor, "BIAYA PROMOSI");
@@ -2394,7 +2394,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
     cursor = tbt.row ? tbt.row + 1 : cursor + 1;
   }
 
-  // --- Breakdown "Biaya Promosi terdiri atas :" ---
+  // Breakdown "Biaya Promosi terdiri atas :"
   let biayaPromosiBreakdown: EvaluasiBiayaBreakdownRow[] = [];
   const biayaBreakdownAnchor = findLabelCellFrom(grid, cursor, "BIAYA PROMOSI TERDIRI ATAS");
   if (biayaBreakdownAnchor) {
@@ -2406,7 +2406,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
     }
   }
 
-  // --- Breakdown kedua (mis. "Bonus Rokok" / "Trial Taste terdiri atas :") ---
+  // Breakdown kedua (mis. "Bonus Rokok" / "Trial Taste terdiri atas :")
   // Labelnya kadang beda-beda antar file ("Trial Taste terdiri atas", "Bonus Rokok",
   // bahkan rusak jadi "#REF!"), jadi dideteksi lewat header tabel berikutnya
   // ("Keterangan | Budget (Rp) | Actual (Rp) | %"), bukan lewat teks labelnya.
@@ -2418,7 +2418,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
     cursor = res.nextRow;
   }
 
-  // --- Section "03": EVALUASI PROGRAM / Kendala / Plan selanjutnya ---
+  // Section "03": EVALUASI PROGRAM / Kendala / Plan selanjutnya
   let evaluasiProgram: string[] = [];
   let kendala: string[] = [];
   let planSelanjutnya: string[] = [];
@@ -2470,7 +2470,7 @@ function extractTradePromoEvaluasiSheet(grid: (string | number | null)[][]): Tra
   };
 }
 
-// ---------- SHEET KE-3: dispatcher varian A (Activation) vs varian B (Trade Promo) ----------
+// SHEET KE-3: dispatcher varian A (Activation) vs varian B (Trade Promo)
 
 function extractEvaluasiSheetAny(grid: (string | number | null)[][]): EvaluasiSheetResult | null {
   const activation = extractEvaluasiSheet(grid);
@@ -2482,7 +2482,7 @@ function extractEvaluasiSheetAny(grid: (string | number | null)[][]): EvaluasiSh
   return null;
 }
 
-// ---------- Main entry point ----------
+// Main entry point
 
 export async function parseActionPlanBuffer(
   buffer: Buffer | ArrayBuffer
@@ -2491,7 +2491,7 @@ export async function parseActionPlanBuffer(
   await workbook.xlsx.load(buffer as any);
 
   const sheet1 = workbook.worksheets[0];
-  const sheet2 = workbook.worksheets[1]; // sheet kedua (opsional) -> detail mekanisme program
+  const sheet2 = workbook.worksheets[1]; // sheet kedua (opsional) detail mekanisme program
   const sheet3 = workbook.worksheets[2];
 
   const grid = sheetToGrid(sheet1);
@@ -2524,7 +2524,7 @@ export async function parseActionPlanBuffer(
     header.totalBiaya = totalBiayaYangDibutuhkan;
   }
 
-  // --- Sheet ke-2: MEKANISME PROGRAM (detail POSM / Trial Taste / Target Sales per sub-program) ---
+  // Sheet ke-2: MEKANISME PROGRAM (detail POSM / Trial Taste / Target Sales per sub-program)
   let mekanismeDetail: MekanismeSheet | null = null;
   if (sheet2) {
     try {
@@ -2537,7 +2537,7 @@ export async function parseActionPlanBuffer(
     }
   }
 
-  // --- Sheet ke-3: EVALUASI ACTION PLAN (Activation ATAU Trade Promo) ---
+  // Sheet ke-3: EVALUASI ACTION PLAN (Activation ATAU Trade Promo)
   let evaluasi: EvaluasiSheetResult | null = null;
   if (sheet3) {
     try {

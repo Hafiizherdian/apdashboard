@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import ActionPlanMekanismeDetail from "@/components/ActionPlanMekanismeDetail";
+import ActionPlanMekanismeDetail from "@/components/features/action-plan/ActionPlanMekanismeDetail";
 
 const C = {
   yellow: "#FFFF99",

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
-import { tk, Theme, FONT_MONO } from '@/components/share';
+import { tk, Theme, FONT_MONO } from '@/components/layout/share';
 
 export interface TableColumn<T> {
   key: string;

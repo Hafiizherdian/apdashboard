@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getActionPlanByKategori } from "@/lib/actionPlanRepository";
-import type { ActionPlanStatus } from "@/lib/actionPlanRepository";
+import { getActionPlanByKategori } from "@/lib/repositories/actionPlanRepository";
+import type { ActionPlanStatus } from "@/lib/repositories/actionPlanRepository";
 
 export const runtime = "nodejs";
 

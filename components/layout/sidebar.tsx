@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth, AuthProvider } from '@/lib/auth/AuthContext';
 import { UserRole } from '@/lib/auth/types';
-import { Theme, tk } from '@/components/share';
-import { RoleIcon} from '@/components/Roleicon';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Theme, tk } from '@/components/layout/share';
+import { RoleIcon} from '@/components/layout/Roleicon';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import {
   FileInput, FileSpreadsheet, BarChart3, PieChart,
   Activity, FileText, Store, Sun, Moon,

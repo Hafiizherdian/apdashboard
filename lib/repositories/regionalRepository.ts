@@ -1,4 +1,4 @@
-import { pool } from "@/lib/db";
+import { pool } from "@/lib/config/db";
 
 export interface RegionalRow { id: string; name: string; description: string | null }
 export interface AreaRow { id: string; name: string; description: string | null; regional_id: string | null; regional_name?: string | null }

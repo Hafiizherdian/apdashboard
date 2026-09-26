@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { MekanismeSheet, MekanismeSubProgram } from "@/components/ActionPlanMekanismeDetail";
+import type { MekanismeSheet, MekanismeSubProgram } from "@/components/features/action-plan/ActionPlanMekanismeDetail";
 
 const C = {
   yellow: "#FFFF99",

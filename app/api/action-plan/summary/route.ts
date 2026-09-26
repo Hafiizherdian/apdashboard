@@ -1,7 +1,7 @@
 //api/action-plan/summary/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getActionPlanSummary } from "@/lib/actionPlanRepository";
-import type { ActionPlanStatus } from "@/lib/actionPlanRepository";
+import { getActionPlanSummary } from "@/lib/repositories/actionPlanRepository";
+import type { ActionPlanStatus } from "@/lib/repositories/actionPlanRepository";
 
 export const runtime = "nodejs";
 

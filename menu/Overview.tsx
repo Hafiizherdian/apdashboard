@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { tk, Theme } from "@/components/share";
-import { KpiMini } from "@/components/KpiMini";
-import { Card } from "@/components/Card";
+import { tk, Theme } from "@/components/layout/share";
+import { KpiMini } from "@/components/ui/KpiMini";
+import { Card } from "@/components/ui/Card";
 import { Files, FileSearchCorner } from 'lucide-react';
 import {
   ActionPlanFilterBar,
@@ -12,7 +12,7 @@ import {
   ActionPlanFilterState,
   ActionPlanFilterOptions,
   filterStateToParams,
-} from "@/components/Filter";
+} from "@/components/ui/Filter";
 
 const GAP = 8;
 

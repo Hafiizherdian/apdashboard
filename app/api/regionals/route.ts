@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listRegionals, createRegional } from "@/lib/regionalRepository";
+import { listRegionals, createRegional } from "@/lib/repositories/regionalRepository";
 import { withAuth } from "@/lib/auth/session";
 
 export async function GET() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateUser, deleteUser } from "@/lib/userRepository";
+import { updateUser, deleteUser } from "@/lib/repositories/userRepository";
 import { withAuth } from "@/lib/auth/session";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

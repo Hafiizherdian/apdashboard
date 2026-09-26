@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import type { EvaluasiSheet, EvaluasiSheetResult } from "@/lib/parseActionsPlan";
-import EvaluasiTradePromoDetailView from "@/components/EvaluasiTradePromoDetailView";
+import type { EvaluasiSheet, EvaluasiSheetResult } from "@/lib/utils/parseActionsPlan";
+import EvaluasiTradePromoDetailView from "@/components/features/evaluasi/EvaluasiTradePromoDetailView";
 
 const C = {
   yellow: "#FFFF99",

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Trash2, ArrowLeft, Calendar, Landmark, Upload, FileSpreadsheet, X } from "lucide-react";
-import { AreaConfig } from "@/lib/areaConfig";
-import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/share";
+import { AreaConfig } from "@/lib/config/areaConfig";
+import { tk, Theme, Spinner, ConfirmModal, FormGroup, FONT_MONO, CardBox } from "@/components/layout/share";
 import {
   ActionPlanFilterBar,
   DEFAULT_AP_FILTER_STATE,
@@ -11,10 +11,10 @@ import {
   ActionPlanFilterState,
   ActionPlanFilterOptions,
   filterStateToParams,
-} from "@/components/Filter";
+} from "@/components/ui/Filter";
 import ExcelReplicaBody from "@/components/apreplica"
-import EvaluasiReplicaBody from "@/components/evaluasireplica"
-import { Table, TableColumn } from "@/components/Table";
+import EvaluasiReplicaBody from "@/components/features/evaluasi/evaluasireplica"
+import { Table, TableColumn } from "@/components/ui/Table";
 
 // ---------- Types ----------
 

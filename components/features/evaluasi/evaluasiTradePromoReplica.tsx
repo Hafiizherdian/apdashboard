@@ -10,7 +10,7 @@ import type {
   EvaluasiBiayaRow,
   EvaluasiBiayaBreakdownRow,
   EvaluasiSignature,
-} from "@/lib/parseActionsPlan";
+} from "@/lib/utils/parseActionsPlan";
 import {
   MobileCardList,
   MobileSummaryList,
@@ -20,7 +20,7 @@ import {
   MobilePercentInput,
   MobileDateInput,
   MobileFormField,
-} from "@/components/Responsivecardtable";
+} from "@/components/ui/Responsivecardtable";
 
 const C = {
   yellow: "#FFFF99",

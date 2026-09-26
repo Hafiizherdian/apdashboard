@@ -1,6 +1,6 @@
 'use client';
 
-import { tk, Theme } from "./share";
+import { tk, Theme } from "../layout/share";
 
 
 function Card({ children, theme, title, icon, color, sub, style, accent }:{

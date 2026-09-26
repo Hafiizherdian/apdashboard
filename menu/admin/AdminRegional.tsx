@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Landmark, Plus, Pencil, Trash2, X } from "lucide-react";
-import { tk, Theme, Spinner, ConfirmModal, FormGroup } from "@/components/share";
-import { Table, TableColumn } from "@/components/Table";
+import { tk, Theme, Spinner, ConfirmModal, FormGroup } from "@/components/layout/share";
+import { Table, TableColumn } from "@/components/ui/Table";
 
 interface RegionalOpt {
   id: string;

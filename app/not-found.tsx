@@ -1,5 +1,5 @@
 // app/not-found.tsx
-import { FONT_MONO } from '@/components/share'; // atau define ulang lokal
+import { FONT_MONO } from '@/components/layout/share'; // atau define ulang lokal
 import {ShieldQuestionMark} from 'lucide-react';
 
 export default function NotFound() {

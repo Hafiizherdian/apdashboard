@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Users, Plus, Pencil, Trash2, X } from "lucide-react";
-import { tk, Theme, Spinner, ConfirmModal, FormGroup } from "@/components/share";
-import { Table, TableColumn } from "@/components/Table";
+import { tk, Theme, Spinner, ConfirmModal, FormGroup } from "@/components/layout/share";
+import { Table, TableColumn } from "@/components/ui/Table";
 import { UserRole, ScopeType, ROLE_LABELS, SCOPE_LABELS } from "@/lib/auth/types";
 
 interface UserListItem {

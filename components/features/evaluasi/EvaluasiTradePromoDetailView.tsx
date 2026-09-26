@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { TradePromoEvaluasiSheet } from "@/lib/parseActionsPlan";
+import type { TradePromoEvaluasiSheet } from "@/lib/utils/parseActionsPlan";
 
 const C = {
   yellow: "#FFFF99",
